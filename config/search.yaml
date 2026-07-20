@@ -1,0 +1,34 @@
+# Parâmetros de busca e critérios de análise.
+# Ajuste livremente. Os critérios de "potencial de compra" ficam em `scoring`.
+
+search:
+  city: "amstelveen"         # cidade alvo (slug do Funda)
+  listing_type: "koop"       # koop = compra, huur = aluguel
+  # Fontes coletadas em conjunto. Opções: mock, funda, pararius.
+  sources: ["funda"]
+  price_min:                 # vazio = sem limite de preço na coleta
+  price_max:
+  # OBS: área/quartos/label NÃO filtram mais a coleta — agora são filtros no
+  # dashboard (você coleta tudo e refina na tela). Ficam aqui só para referência.
+  min_area_m2: 50
+  min_rooms: 2
+  energy_labels: []
+  # Coleta: com price_min/max preenchidos, o Funda já limita por preço (menos páginas).
+  # cada 15 = 1 página. Ex: 300 = ~20 páginas.
+  # Deixe VAZIO (max_results:) para pegar a CIDADE TODA, sem limite (varredura longa).
+  max_results:
+
+# Comportamento do scraper (educado, para não sobrecarregar o site).
+scraper:
+  headless: false            # false = janela visível (mais seguro contra DataDome nos testes)
+  min_delay_seconds: 3       # pausa mínima entre páginas
+  max_delay_seconds: 7       # pausa máxima (aleatória, simula humano)
+  user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+
+# Pesos do score de "potencial de compra" (somam 1.0).
+scoring:
+  weight_price_vs_woz: 0.30    # preço abaixo do valor WOZ (avaliação fiscal)
+  weight_price_vs_sales: 0.25  # preço abaixo de vendas reais (Kadaster) — sinal forte
+  weight_price_per_m2: 0.25    # preço/m² vs mediana da amostra
+  weight_days_on_market: 0.12  # tempo no mercado (mais tempo = mais margem)
+  weight_energy_label: 0.08    # eficiência energética

@@ -1,0 +1,15 @@
+# ambiente e dependências
+.venv/
+__pycache__/
+*.pyc
+
+# dados locais (não publicar o banco bruto)
+data/
+output/
+
+# perfis do navegador (Playwright)
+data/pw_profile/
+data/pw_profile_woz/
+
+# o site publicado fica em docs/ (esse SIM vai pro GitHub Pages)
+!docs/
