@@ -99,7 +99,7 @@
 <body>
 <header>
   <h1>Funda Analyzer — Potencial de compra</h1>
-  <div class="sub"><span id="vcount">1989</span> de 1989 imóveis · gerado em 22/07/2026 00:13 · fonte: banco (histórico)</div>
+  <div class="sub"><span id="vcount">1989</span> de 1989 imóveis · gerado em 22/07/2026 00:18 · fonte: banco (histórico)</div>
 </header>
 <div class="wrap">
   <div class="filters">
@@ -111,11 +111,6 @@
     <label>Distrito / bairro
       <select id="fDist"><option value="">Todos</option>
       <option value="amstelveen">Amstelveen</option><option value="amsterdam">Amsterdam</option><option value="amsterdam-centrum">Amsterdam-Centrum</option><option value="amsterdam-nieuw-west">Amsterdam-Nieuw-West</option><option value="amsterdam-noord">Amsterdam-Noord</option><option value="amsterdam-oost">Amsterdam-Oost</option><option value="amsterdam-west">Amsterdam-West</option><option value="amsterdam-zuid">Amsterdam-Zuid</option><option value="amsterdam-zuidoost">Amsterdam-Zuidoost</option>
-      </select>
-    </label>
-    <label>Situação
-      <select id="fStatus"><option value="">Todas</option>
-      <option value="disponível">Disponível</option>
       </select>
     </label>
     <label>Preço mín (€)<input id="fMin" type="number" placeholder="0"></label>
@@ -30075,7 +30070,7 @@
   function drawChart(mask){
     var x=[],y=[],t=[],a=[];
     for(var i=0;i<chartData.score.length;i++){
-      if(mask && !mask(chartData.city[i], chartData.price[i], chartData.district[i], chartData.status[i])) continue;
+      if(mask && !mask(chartData.city[i], chartData.price[i], chartData.district[i])) continue;
       x.push(chartData.ppm2[i]); y.push(chartData.score[i]);
       t.push(chartData.labels[i]); a.push(chartData.area[i]);
     }
@@ -30095,31 +30090,29 @@
   // Filtros de cidade e faixa de preço (client-side, sem recoletar)
   var fCity=document.getElementById('fCity'),
       fDist=document.getElementById('fDist'),
-      fStatus=document.getElementById('fStatus'),
       fMin=document.getElementById('fMin'),
       fMax=document.getElementById('fMax');
   function applyFilters(){
-    var city=fCity.value, dist=fDist.value, st=fStatus.value,
+    var city=fCity.value, dist=fDist.value,
         mn=parseFloat(fMin.value), mx=parseFloat(fMax.value);
-    var mask=function(c,p,d,s){
+    var mask=function(c,p,d){
       if(city && c!==city) return false;
       if(dist && d!==dist) return false;
-      if(st && s!==st) return false;
       if(!isNaN(mn) && p<mn) return false;
       if(!isNaN(mx) && p>mx) return false;
       return true;
     };
     var tb=document.querySelector('#tbl tbody'), shown=0;
     [].slice.call(tb.rows).forEach(function(r){
-      var ok=mask(r.dataset.city, +r.dataset.price, r.dataset.district, r.dataset.status);
+      var ok=mask(r.dataset.city, +r.dataset.price, r.dataset.district);
       r.style.display = ok?'':'none'; if(ok) shown++;
     });
     document.getElementById('vcount').innerText=shown;
     drawChart(mask);
   }
-  [fCity,fDist,fStatus,fMin,fMax].forEach(function(el){ el.addEventListener('input', applyFilters); });
+  [fCity,fDist,fMin,fMax].forEach(function(el){ el.addEventListener('input', applyFilters); });
   document.getElementById('fReset').addEventListener('click', function(){
-    fCity.value=''; fDist.value=''; fStatus.value=''; fMin.value=''; fMax.value=''; applyFilters();
+    fCity.value=''; fDist.value=''; fMin.value=''; fMax.value=''; applyFilters();
   });
 
   drawChart(null); // desenho inicial (sem filtro)
