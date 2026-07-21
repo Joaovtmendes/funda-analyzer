@@ -2,6 +2,7 @@
 <html lang="pt-br">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Funda Analyzer — Ranking</title>
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <style>
@@ -13,10 +14,23 @@
   h1 { margin:0; font-size:20px; }
   .sub { color:var(--muted); font-size:13px; margin-top:4px; }
   .wrap { padding:24px 32px; }
+  .table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; border-radius:12px; }
   #chart { background:var(--card); border-radius:12px; padding:8px; margin-bottom:24px; }
+  @media (max-width:640px) {
+    header { padding:16px 16px; }
+    h1 { font-size:17px; }
+    .wrap { padding:14px 12px; }
+    th, td { padding:7px 9px; font-size:12px; }
+    table { min-width:720px; }           /* mantém colunas legíveis; rola na horizontal */
+    .filters { gap:8px; }
+    .filters select, .filters input { min-width:0; width:100%; }
+    .filters label { flex:1 1 45%; }
+    .modal-card { padding:18px 16px; }
+    .mgrid { grid-template-columns:1fr; }
+  }
   table { width:100%; border-collapse:collapse; background:var(--card); border-radius:12px; overflow:hidden; }
   th, td { padding:10px 12px; text-align:left; font-size:13px; border-bottom:1px solid #212c38; }
-  th { background:#1c2732; cursor:pointer; user-select:none; position:sticky; top:0; }
+  th { background:#1c2732; cursor:pointer; user-select:none; }
   th:hover { color:var(--accent); }
   tr:hover td { background:#1c2732; }
   .score { font-weight:700; color:var(--accent); }
@@ -76,12 +90,17 @@
 <body>
 <header>
   <h1>Funda Analyzer — Potencial de compra</h1>
-  <div class="sub"><span id="vcount">30</span> de 30 imóveis · gerado em 20/07/2026 22:13 · fonte: funda</div>
+  <div class="sub"><span id="vcount">30</span> de 30 imóveis · gerado em 21/07/2026 22:54 · fonte: apify</div>
 </header>
 <div class="wrap">
   <div class="filters">
     <label>Cidade
       <select id="fCity"><option value="">Todas</option>
+      <option value="amstelveen">Amstelveen</option>
+      </select>
+    </label>
+    <label>Distrito / bairro
+      <select id="fDist"><option value="">Todos</option>
       <option value="amstelveen">Amstelveen</option>
       </select>
     </label>
@@ -93,13 +112,15 @@
   <details class="help">
     <summary>Como ler este relatório (score e colunas)</summary>
     <div class="help-body">
-      <p>O <b>Score</b> (0–100) mede o <b>potencial de compra</b>: quanto maior, mais o imóvel
-      parece barato frente à vizinhança. Ele combina três sinais reais, com estes pesos:</p>
+      <p>O <b>Score</b> (0–100) mede o <b>potencial de flip</b> (comprar-reformar-revender):
+      premia oportunidade de agregar valor e desconta riscos que comem a margem. Pesos:</p>
       <dl>
-        <dt>Preço/m² vs bairro — 60%</dt><dd>preço por m² abaixo da mediana do BAIRRO (código postal)</dd>
-        <dt>Tempo no mercado — 20%</dt><dd>imóvel parado há mais tempo = mais margem de negociação</dd>
-        <dt>Label energético — 20%</dt><dd>eficiência energética (A melhor, G pior)</dd>
+        <dt>Preço/m² vs bairro — 30%</dt><dd>preço por m² abaixo da mediana do BAIRRO = barganha</dd>
+        <dt>Potencial de reforma — 30%</dt><dd>PRECISA de obra = espaço pra valorizar (aqui, reforma "alto" é bom)</dd>
+        <dt>Preço vs WOZ — 20%</dt><dd>preço abaixo do WOZ oficial = margem/equity</dd>
+        <dt>Tempo no mercado — 20%</dt><dd>imóvel parado = mais margem de negociação</dd>
       </dl>
+      <p style="color:#f07171">Descontos de risco: erfpacht com canon e VvE alta reduzem a nota (comem a margem do flip).</p>
       <h4>Colunas da tabela</h4>
       <dl>
         <dt>Preço €</dt><dd>preço pedido no Funda</dd>
@@ -111,8 +132,7 @@
       </dl>
       <h4>Em breve (funções em desenvolvimento)</h4>
       <dl>
-        <dt>WOZ real</dt><dd>avaliação fiscal oficial por endereço (hoje desligada — os dados abertos não incluem o valor)</dd>
-        <dt>Kadaster</dt><dd>preços de venda reais de imóveis comparáveis, para valuation de mercado</dd>
+        <dt>Kadaster / comparáveis vendidos</dt><dd>preços de imóveis que venderam na região, para valuation de mercado</dd>
         <dt>Análise de imagem</dt><dd>avaliação do potencial de reforma a partir das fotos do anúncio</dd>
       </dl>
       <p style="color:var(--muted)">Dica: clique em qualquer imóvel na tabela para ver todos os dados coletados dele.</p>
@@ -120,6 +140,7 @@
   </details>
 
   <div id="chart"></div>
+  <div class="table-wrap">
   <table id="tbl">
     <thead><tr>
       <th data-i="0">#</th>
@@ -134,398 +155,399 @@
     </tr></thead>
     <tbody>
     
-      <tr data-city="amstelveen" data-price="360000" data-idx="0" onclick="openModal(this.dataset.idx)">
+      <tr data-city="amstelveen" data-district="amstelveen" data-price="599000" data-idx="0" onclick="openModal(this.dataset.idx)">
         <td class="num">1</td>
-        <td class="num score">75</td>
+        <td class="num score">65</td>
+        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-meander-297/43378022/" target="_blank" onclick="event.stopPropagation()">Meander 297</a>
+            <span class="src">apify</span></td>
+        <td class="num">599.000</td>
+        <td class="num">4.754</td>
+        <td class="num">83%</td>
+        <td>13/03/2026 (130d)</td>
+        <td><span class="reno reno-medio">medio</span></td>
+        <td><span class="badge">label E</span><span class="badge">€/m² 17% abaixo do bairro</span><span class="badge">130 dias no mercado</span></td>
+      </tr>
+    
+      <tr data-city="amstelveen" data-district="amstelveen" data-price="600000" data-idx="1" onclick="openModal(this.dataset.idx)">
+        <td class="num">2</td>
+        <td class="num score">60</td>
+        <td><a href="https://www.funda.nl/detail/koop/amstelveen/huis-fideliolaan-27/44451813/" target="_blank" onclick="event.stopPropagation()">Fideliolaan 27</a>
+            <span class="src">apify</span></td>
+        <td class="num">600.000</td>
+        <td class="num">4.800</td>
+        <td class="num">88%</td>
+        <td>22/05/2026 (60d)</td>
+        <td><span class="reno reno-medio">medio</span></td>
+        <td><span class="badge">€/m² 12% abaixo do bairro</span><span class="badge">Preço 9% abaixo do WOZ</span></td>
+      </tr>
+    
+      <tr data-city="amstelveen" data-district="amstelveen" data-price="385000" data-idx="2" onclick="openModal(this.dataset.idx)">
+        <td class="num">3</td>
+        <td class="num score">59</td>
+        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-mr-g-groen-van-prinstererlaan-341/43279364/" target="_blank" onclick="event.stopPropagation()">Mr. G. Groen van Prinstererlaan 341</a>
+            <span class="src">apify</span></td>
+        <td class="num">385.000</td>
+        <td class="num">6.016</td>
+        <td class="num">105%</td>
+        <td>05/12/2025 (228d)</td>
+        <td><span class="reno reno-medio">medio</span></td>
+        <td><span class="badge">label G</span><span class="badge">228 dias no mercado</span><span class="badge">Preço 0% abaixo do WOZ</span></td>
+      </tr>
+    
+      <tr data-city="amstelveen" data-district="amstelveen" data-price="360000" data-idx="3" onclick="openModal(this.dataset.idx)">
+        <td class="num">4</td>
+        <td class="num score">58</td>
         <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-mr-fa-van-hallweg-112/44414780/" target="_blank" onclick="event.stopPropagation()">Mr. F.A. van Hallweg 112</a>
-            <span class="src">funda</span></td>
+            <span class="src">apify</span></td>
         <td class="num">360.000</td>
         <td class="num">4.500</td>
-        <td class="num">75%</td>
-        <td>06/07/2026 (14d)</td>
+        <td class="num">79%</td>
+        <td>02/07/2026 (19d)</td>
         <td><span class="reno reno-medio">medio</span></td>
-        <td><span class="badge">€/m² 40% abaixo da média Funda</span><span class="badge">€/m² 25% abaixo do bairro</span><span class="badge">€/m² 25% abaixo do bairro</span></td>
+        <td><span class="badge">€/m² 40% abaixo da média Funda</span><span class="badge">€/m² 21% abaixo do bairro</span><span class="badge">⚠ VvE €223/mês (−2)</span></td>
       </tr>
     
-      <tr data-city="amstelveen" data-price="375000" data-idx="1" onclick="openModal(this.dataset.idx)">
-        <td class="num">2</td>
-        <td class="num score">66</td>
-        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-lindenlaan-523/80888468/" target="_blank" onclick="event.stopPropagation()">Lindenlaan 523</a>
-            <span class="src">funda</span></td>
-        <td class="num">375.000</td>
-        <td class="num">5.435</td>
-        <td class="num">84%</td>
-        <td>10/07/2026 (10d)</td>
-        <td><span class="reno reno-medio">medio</span></td>
-        <td><span class="badge">€/m² 16% abaixo do bairro</span><span class="badge">€/m² 16% abaixo do bairro</span></td>
-      </tr>
-    
-      <tr data-city="amstelveen" data-price="775000" data-idx="2" onclick="openModal(this.dataset.idx)">
-        <td class="num">3</td>
-        <td class="num score">65</td>
-        <td><a href="https://www.funda.nl/detail/koop/amstelveen/huis-gunterstein-1/44413320/" target="_blank" onclick="event.stopPropagation()">Gunterstein 1</a>
-            <span class="src">funda</span></td>
-        <td class="num">775.000</td>
-        <td class="num">5.167</td>
-        <td class="num">86%</td>
-        <td>06/07/2026 (14d)</td>
-        <td><span class="reno reno-medio">medio</span></td>
-        <td><span class="badge">€/m² 12% abaixo da média Funda</span><span class="badge">€/m² 14% abaixo do bairro</span><span class="badge">€/m² 14% abaixo do bairro</span></td>
-      </tr>
-    
-      <tr data-city="amstelveen" data-price="415000" data-idx="3" onclick="openModal(this.dataset.idx)">
-        <td class="num">4</td>
-        <td class="num score">65</td>
-        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-populierenlaan-415/44431391/" target="_blank" onclick="event.stopPropagation()">Populierenlaan 415</a>
-            <span class="src">funda</span></td>
-        <td class="num">415.000</td>
-        <td class="num">5.123</td>
-        <td class="num">80%</td>
-        <td>17/07/2026 (3d)</td>
-        <td><span class="reno reno-medio">medio</span></td>
-        <td><span class="badge">€/m² 20% abaixo da média Funda</span><span class="badge">€/m² 20% abaixo do bairro</span><span class="badge">€/m² 20% abaixo do bairro</span></td>
-      </tr>
-    
-      <tr data-city="amstelveen" data-price="525000" data-idx="4" onclick="openModal(this.dataset.idx)">
+      <tr data-city="amstelveen" data-district="amstelveen" data-price="500000" data-idx="4" onclick="openModal(this.dataset.idx)">
         <td class="num">5</td>
-        <td class="num score">63</td>
-        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-meander-159/44428776/" target="_blank" onclick="event.stopPropagation()">Meander 159</a>
-            <span class="src">funda</span></td>
-        <td class="num">525.000</td>
-        <td class="num">4.907</td>
-        <td class="num">82%</td>
-        <td>07/07/2026 (13d)</td>
-        <td><span class="reno reno-medio">medio</span></td>
-        <td><span class="badge">€/m² 16% abaixo da média Funda</span><span class="badge">✓ goed onderhouden</span><span class="badge">€/m² 18% abaixo do bairro</span></td>
-      </tr>
-    
-      <tr data-city="amstelveen" data-price="700000" data-idx="5" onclick="openModal(this.dataset.idx)">
-        <td class="num">6</td>
-        <td class="num score">61</td>
-        <td><a href="https://www.funda.nl/detail/koop/amstelveen/huis-de-parel-13/44439664/" target="_blank" onclick="event.stopPropagation()">De Parel 13</a>
-            <span class="src">funda</span></td>
-        <td class="num">700.000</td>
-        <td class="num">5.303</td>
-        <td class="num">-</td>
-        <td>16/07/2026 (4d)</td>
-        <td><span class="reno reno-baixo">baixo</span></td>
-        <td><span class="badge">€/m² 8% abaixo da média Funda</span><span class="badge">✓ goed onderhouden</span></td>
-      </tr>
-    
-      <tr data-city="amstelveen" data-price="575000" data-idx="6" onclick="openModal(this.dataset.idx)">
-        <td class="num">7</td>
-        <td class="num score">60</td>
-        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-meander-863/44420200/" target="_blank" onclick="event.stopPropagation()">Meander 863</a>
-            <span class="src">funda</span></td>
-        <td class="num">575.000</td>
-        <td class="num">5.227</td>
-        <td class="num">87%</td>
-        <td>08/07/2026 (12d)</td>
-        <td><span class="reno reno-medio">medio</span></td>
-        <td><span class="badge">€/m² 11% abaixo da média Funda</span><span class="badge">€/m² 13% abaixo do bairro</span><span class="badge">€/m² 13% abaixo do bairro</span></td>
-      </tr>
-    
-      <tr data-city="amstelveen" data-price="535000" data-idx="7" onclick="openModal(this.dataset.idx)">
-        <td class="num">8</td>
         <td class="num score">58</td>
+        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-meander-295/43397495/" target="_blank" onclick="event.stopPropagation()">Meander 295</a>
+            <span class="src">apify</span></td>
+        <td class="num">500.000</td>
+        <td class="num">5.155</td>
+        <td class="num">90%</td>
+        <td>28/03/2026 (115d)</td>
+        <td><span class="reno reno-medio">medio</span></td>
+        <td><span class="badge">€/m² 10% abaixo do bairro</span><span class="badge">115 dias no mercado</span></td>
+      </tr>
+    
+      <tr data-city="amstelveen" data-district="amstelveen" data-price="425000" data-idx="5" onclick="openModal(this.dataset.idx)">
+        <td class="num">6</td>
+        <td class="num score">56</td>
+        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-franciscus-van-assisielaan-39/89760222/" target="_blank" onclick="event.stopPropagation()">Franciscus van Assisiëlaan 39</a>
+            <span class="src">apify</span></td>
+        <td class="num">425.000</td>
+        <td class="num">5.060</td>
+        <td class="num">92%</td>
+        <td>05/04/2026 (107d)</td>
+        <td><span class="reno reno-medio">medio</span></td>
+        <td><span class="badge">107 dias no mercado</span><span class="badge">107 dias no mercado</span></td>
+      </tr>
+    
+      <tr data-city="amstelveen" data-district="amstelveen" data-price="500000" data-idx="6" onclick="openModal(this.dataset.idx)">
+        <td class="num">7</td>
+        <td class="num score">52</td>
+        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-vesuvius-19/43347454/" target="_blank" onclick="event.stopPropagation()">Vesuvius 19</a>
+            <span class="src">apify</span></td>
+        <td class="num">500.000</td>
+        <td class="num">5.155</td>
+        <td class="num">97%</td>
+        <td>08/05/2026 (74d)</td>
+        <td><span class="reno reno-medio">medio</span></td>
+        <td><span class="badge">Preço 0% abaixo do WOZ</span></td>
+      </tr>
+    
+      <tr data-city="amstelveen" data-district="amstelveen" data-price="500000" data-idx="7" onclick="openModal(this.dataset.idx)">
+        <td class="num">8</td>
+        <td class="num score">50</td>
+        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-haya-van-somerenlaan-102/44412456/" target="_blank" onclick="event.stopPropagation()">Haya van Somerenlaan 102</a>
+            <span class="src">apify</span></td>
+        <td class="num">500.000</td>
+        <td class="num">5.319</td>
+        <td class="num">87%</td>
+        <td>01/07/2026 (20d)</td>
+        <td><span class="reno reno-medio">medio</span></td>
+        <td><span class="badge">€/m² 13% abaixo do bairro</span><span class="badge">€/m² 13% abaixo do bairro</span></td>
+      </tr>
+    
+      <tr data-city="amstelveen" data-district="amstelveen" data-price="515000" data-idx="8" onclick="openModal(this.dataset.idx)">
+        <td class="num">9</td>
+        <td class="num score">50</td>
+        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-meander-37/80843091/" target="_blank" onclick="event.stopPropagation()">Meander 37</a>
+            <span class="src">apify</span></td>
+        <td class="num">515.000</td>
+        <td class="num">4.682</td>
+        <td class="num">82%</td>
+        <td>05/06/2026 (46d)</td>
+        <td><span class="reno reno-medio">medio</span></td>
+        <td><span class="badge">€/m² 18% abaixo do bairro</span><span class="badge">€/m² 18% abaixo do bairro</span></td>
+      </tr>
+    
+      <tr data-city="amstelveen" data-district="amstelveen" data-price="435000" data-idx="9" onclick="openModal(this.dataset.idx)">
+        <td class="num">10</td>
+        <td class="num score">49</td>
+        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-meander-81/43315669/" target="_blank" onclick="event.stopPropagation()">Meander 81</a>
+            <span class="src">apify</span></td>
+        <td class="num">435.000</td>
+        <td class="num">5.724</td>
+        <td class="num">100%</td>
+        <td>14/04/2026 (98d)</td>
+        <td><span class="reno reno-medio">medio</span></td>
+        <td><span class="badge">98 dias no mercado</span><span class="badge">98 dias no mercado</span></td>
+      </tr>
+    
+      <tr data-city="amstelveen" data-district="amstelveen" data-price="600000" data-idx="10" onclick="openModal(this.dataset.idx)">
+        <td class="num">11</td>
+        <td class="num score">48</td>
+        <td><a href="https://www.funda.nl/detail/koop/amstelveen/huis-de-parel-26/44401438/" target="_blank" onclick="event.stopPropagation()">De Parel 26</a>
+            <span class="src">apify</span></td>
+        <td class="num">600.000</td>
+        <td class="num">5.405</td>
+        <td class="num">-</td>
+        <td>22/06/2026 (29d)</td>
+        <td><span class="reno reno-medio">medio</span></td>
+        <td><span class="badge">Preço 5% abaixo do WOZ</span></td>
+      </tr>
+    
+      <tr data-city="amstelveen" data-district="amstelveen" data-price="500000" data-idx="11" onclick="openModal(this.dataset.idx)">
+        <td class="num">12</td>
+        <td class="num score">47</td>
+        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-groenhof-1/44406292/" target="_blank" onclick="event.stopPropagation()">Groenhof 1</a>
+            <span class="src">apify</span></td>
+        <td class="num">500.000</td>
+        <td class="num">5.155</td>
+        <td class="num">97%</td>
+        <td>18/06/2026 (33d)</td>
+        <td><span class="reno reno-medio">medio</span></td>
+        <td></td>
+      </tr>
+    
+      <tr data-city="amstelveen" data-district="amstelveen" data-price="369000" data-idx="12" onclick="openModal(this.dataset.idx)">
+        <td class="num">13</td>
+        <td class="num score">43</td>
+        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-kringloop-275/89791781/" target="_blank" onclick="event.stopPropagation()">Kringloop 275</a>
+            <span class="src">apify</span></td>
+        <td class="num">369.000</td>
+        <td class="num">5.952</td>
+        <td class="num">112%</td>
+        <td>30/04/2026 (82d)</td>
+        <td><span class="reno reno-medio">medio</span></td>
+        <td></td>
+      </tr>
+    
+      <tr data-city="amstelveen" data-district="amstelveen" data-price="435000" data-idx="13" onclick="openModal(this.dataset.idx)">
+        <td class="num">14</td>
+        <td class="num score">43</td>
+        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-tiengemeten-61/44491420/" target="_blank" onclick="event.stopPropagation()">Tiengemeten 61</a>
+            <span class="src">apify</span></td>
+        <td class="num">435.000</td>
+        <td class="num">5.506</td>
+        <td class="num">96%</td>
+        <td>15/06/2026 (36d)</td>
+        <td><span class="reno reno-medio">medio</span></td>
+        <td><span class="badge">label E</span></td>
+      </tr>
+    
+      <tr data-city="amstelveen" data-district="amstelveen" data-price="439000" data-idx="14" onclick="openModal(this.dataset.idx)">
+        <td class="num">15</td>
+        <td class="num score">40</td>
+        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-amberlaan-68/44418067/" target="_blank" onclick="event.stopPropagation()">Amberlaan 68</a>
+            <span class="src">apify</span></td>
+        <td class="num">439.000</td>
+        <td class="num">5.488</td>
+        <td class="num">100%</td>
+        <td>26/06/2026 (25d)</td>
+        <td><span class="reno reno-medio">medio</span></td>
+        <td></td>
+      </tr>
+    
+      <tr data-city="amstelveen" data-district="amstelveen" data-price="425000" data-idx="15" onclick="openModal(this.dataset.idx)">
+        <td class="num">16</td>
+        <td class="num score">40</td>
+        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-kostverlorenhof-113/44412646/" target="_blank" onclick="event.stopPropagation()">Kostverlorenhof 113</a>
+            <span class="src">apify</span></td>
+        <td class="num">425.000</td>
+        <td class="num">5.519</td>
+        <td class="num">101%</td>
+        <td>01/07/2026 (20d)</td>
+        <td><span class="reno reno-medio">medio</span></td>
+        <td></td>
+      </tr>
+    
+      <tr data-city="amstelveen" data-district="amstelveen" data-price="435000" data-idx="16" onclick="openModal(this.dataset.idx)">
+        <td class="num">17</td>
+        <td class="num score">40</td>
+        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-populierenlaan-385/44402321/" target="_blank" onclick="event.stopPropagation()">Populierenlaan 385</a>
+            <span class="src">apify</span></td>
+        <td class="num">435.000</td>
+        <td class="num">5.438</td>
+        <td class="num">99%</td>
+        <td>23/06/2026 (28d)</td>
+        <td><span class="reno reno-medio">medio</span></td>
+        <td></td>
+      </tr>
+    
+      <tr data-city="amstelveen" data-district="amstelveen" data-price="475000" data-idx="17" onclick="openModal(this.dataset.idx)">
+        <td class="num">18</td>
+        <td class="num score">38</td>
+        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-zonnesteinhof-10/44453646/" target="_blank" onclick="event.stopPropagation()">Zonnesteinhof 10</a>
+            <span class="src">apify</span></td>
+        <td class="num">475.000</td>
+        <td class="num">6.169</td>
+        <td class="num">108%</td>
+        <td>20/05/2026 (62d)</td>
+        <td><span class="reno reno-medio">medio</span></td>
+        <td></td>
+      </tr>
+    
+      <tr data-city="amstelveen" data-district="amstelveen" data-price="535000" data-idx="18" onclick="openModal(this.dataset.idx)">
+        <td class="num">19</td>
+        <td class="num score">37</td>
         <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-galerij-92/44425881/" target="_blank" onclick="event.stopPropagation()">Galerij 92</a>
-            <span class="src">funda</span></td>
+            <span class="src">apify</span></td>
         <td class="num">535.000</td>
         <td class="num">5.350</td>
-        <td class="num">89%</td>
-        <td>06/07/2026 (14d)</td>
+        <td class="num">94%</td>
+        <td>03/07/2026 (18d)</td>
         <td><span class="reno reno-medio">medio</span></td>
-        <td><span class="badge">€/m² 9% abaixo da média Funda</span><span class="badge">€/m² 11% abaixo do bairro</span><span class="badge">€/m² 11% abaixo do bairro</span></td>
+        <td><span class="badge">€/m² 9% abaixo da média Funda</span><span class="badge">⚠ VvE €256/mês (−4)</span><span class="badge">⚠ VvE €256/mês (−4)</span></td>
       </tr>
     
-      <tr data-city="amstelveen" data-price="815000" data-idx="8" onclick="openModal(this.dataset.idx)">
-        <td class="num">9</td>
-        <td class="num score">54</td>
-        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-max-havelaarlaan-109/80896308/" target="_blank" onclick="event.stopPropagation()">Max Havelaarlaan 109</a>
-            <span class="src">funda</span></td>
-        <td class="num">815.000</td>
-        <td class="num">5.660</td>
-        <td class="num">-</td>
-        <td>20/07/2026 (0d)</td>
-        <td><span class="reno reno-baixo">baixo</span></td>
-        <td><span class="badge">€/m² 8% abaixo da média Funda</span><span class="badge">✓ instapklaar</span></td>
-      </tr>
-    
-      <tr data-city="amstelveen" data-price="975000" data-idx="9" onclick="openModal(this.dataset.idx)">
-        <td class="num">10</td>
-        <td class="num score">50</td>
-        <td><a href="https://www.funda.nl/detail/koop/amstelveen/huis-rambaldolaan-5/44413522/" target="_blank" onclick="event.stopPropagation()">Rambaldolaan 5</a>
-            <span class="src">funda</span></td>
-        <td class="num">975.000</td>
-        <td class="num">6.500</td>
-        <td class="num">101%</td>
-        <td>06/07/2026 (14d)</td>
-        <td><span class="reno reno-medio">medio</span></td>
-        <td><span class="badge">construção 1938</span></td>
-      </tr>
-    
-      <tr data-city="amstelveen" data-price="1295000" data-idx="10" onclick="openModal(this.dataset.idx)">
-        <td class="num">11</td>
-        <td class="num score">49</td>
-        <td><a href="https://www.funda.nl/detail/koop/amstelveen/huis-soerlaan-4/44414555/" target="_blank" onclick="event.stopPropagation()">Soerlaan 4</a>
-            <span class="src">funda</span></td>
-        <td class="num">1.295.000</td>
-        <td class="num">6.379</td>
-        <td class="num">99%</td>
-        <td>06/07/2026 (14d)</td>
-        <td><span class="reno reno-medio">medio</span></td>
-        <td><span class="badge">construção 1939</span></td>
-      </tr>
-    
-      <tr data-city="amstelveen" data-price="625000" data-idx="11" onclick="openModal(this.dataset.idx)">
-        <td class="num">12</td>
-        <td class="num score">48</td>
-        <td><a href="https://www.funda.nl/detail/koop/amstelveen/huis-maarten-lutherweg-284/44432423/" target="_blank" onclick="event.stopPropagation()">Maarten Lutherweg 284</a>
-            <span class="src">funda</span></td>
-        <td class="num">625.000</td>
-        <td class="num">5.841</td>
-        <td class="num">91%</td>
-        <td>17/07/2026 (3d)</td>
-        <td><span class="reno reno-medio">medio</span></td>
-        <td><span class="badge">label E</span><span class="badge">€/m² 9% abaixo do bairro</span><span class="badge">€/m² 9% abaixo do bairro</span></td>
-      </tr>
-    
-      <tr data-city="amstelveen" data-price="395000" data-idx="12" onclick="openModal(this.dataset.idx)">
-        <td class="num">13</td>
-        <td class="num score">44</td>
-        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-van-heuven-goedhartlaan-494/44424676/" target="_blank" onclick="event.stopPropagation()">Van Heuven Goedhartlaan 494</a>
-            <span class="src">funda</span></td>
-        <td class="num">395.000</td>
-        <td class="num">5.985</td>
-        <td class="num">100%</td>
-        <td>11/07/2026 (9d)</td>
-        <td><span class="reno reno-medio">medio</span></td>
-        <td></td>
-      </tr>
-    
-      <tr data-city="amstelveen" data-price="325000" data-idx="13" onclick="openModal(this.dataset.idx)">
-        <td class="num">14</td>
-        <td class="num score">44</td>
-        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-vesuvius-26/44439133/" target="_blank" onclick="event.stopPropagation()">Vesuvius 26</a>
-            <span class="src">funda</span></td>
-        <td class="num">325.000</td>
-        <td class="num">5.804</td>
-        <td class="num">97%</td>
-        <td>16/07/2026 (4d)</td>
-        <td><span class="reno reno-medio">medio</span></td>
-        <td><span class="badge">✓ goed onderhouden</span></td>
-      </tr>
-    
-      <tr data-city="amstelveen" data-price="735000" data-idx="14" onclick="openModal(this.dataset.idx)">
-        <td class="num">15</td>
-        <td class="num score">44</td>
-        <td><a href="https://www.funda.nl/detail/koop/amstelveen/huis-taag-13/80893451/" target="_blank" onclick="event.stopPropagation()">Taag 13</a>
-            <span class="src">funda</span></td>
-        <td class="num">735.000</td>
-        <td class="num">5.976</td>
-        <td class="num">100%</td>
-        <td>16/07/2026 (4d)</td>
-        <td><span class="reno reno-baixo">baixo</span></td>
-        <td><span class="badge">€/m² 7% abaixo da média Funda</span><span class="badge">✓ gemoderniseerd</span></td>
-      </tr>
-    
-      <tr data-city="amstelveen" data-price="635000" data-idx="15" onclick="openModal(this.dataset.idx)">
-        <td class="num">16</td>
-        <td class="num score">42</td>
-        <td><a href="https://www.funda.nl/detail/koop/amstelveen/huis-de-zon-18/44426670/" target="_blank" onclick="event.stopPropagation()">De Zon 18</a>
-            <span class="src">funda</span></td>
-        <td class="num">635.000</td>
-        <td class="num">6.165</td>
-        <td class="num">-</td>
-        <td>06/07/2026 (14d)</td>
-        <td><span class="reno reno-medio">medio</span></td>
-        <td></td>
-      </tr>
-    
-      <tr data-city="amstelveen" data-price="1395000" data-idx="16" onclick="openModal(this.dataset.idx)">
-        <td class="num">17</td>
-        <td class="num score">42</td>
-        <td><a href="https://www.funda.nl/detail/koop/amstelveen/huis-noorddammerlaan-83/80878418/" target="_blank" onclick="event.stopPropagation()">Noorddammerlaan 83</a>
-            <span class="src">funda</span></td>
-        <td class="num">1.395.000</td>
-        <td class="num">6.013</td>
-        <td class="num">100%</td>
-        <td>06/07/2026 (14d)</td>
-        <td><span class="reno reno-medio">medio</span></td>
-        <td><span class="badge">€/m² 7% abaixo da média Funda</span></td>
-      </tr>
-    
-      <tr data-city="amstelveen" data-price="480000" data-idx="17" onclick="openModal(this.dataset.idx)">
-        <td class="num">18</td>
-        <td class="num score">40</td>
-        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-mr-fa-van-hallweg-58/44437160/" target="_blank" onclick="event.stopPropagation()">Mr. F.A. van Hallweg 58</a>
-            <span class="src">funda</span></td>
-        <td class="num">480.000</td>
-        <td class="num">6.000</td>
-        <td class="num">100%</td>
-        <td>15/07/2026 (5d)</td>
-        <td><span class="reno reno-baixo">baixo</span></td>
-        <td><span class="badge">€/m² 20% abaixo da média Funda</span><span class="badge">✓ gerenoveerd</span></td>
-      </tr>
-    
-      <tr data-city="amstelveen" data-price="385000" data-idx="18" onclick="openModal(this.dataset.idx)">
-        <td class="num">19</td>
-        <td class="num score">40</td>
-        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-mr-g-groen-van-prinstererlaan-137/44427740/" target="_blank" onclick="event.stopPropagation()">Mr. G. Groen van Prinstererlaan 137</a>
-            <span class="src">funda</span></td>
-        <td class="num">385.000</td>
-        <td class="num">5.923</td>
-        <td class="num">99%</td>
-        <td>06/07/2026 (14d)</td>
-        <td><span class="reno reno-medio">medio</span></td>
-        <td><span class="badge">label E</span></td>
-      </tr>
-    
-      <tr data-city="amstelveen" data-price="489000" data-idx="19" onclick="openModal(this.dataset.idx)">
+      <tr data-city="amstelveen" data-district="amstelveen" data-price="575000" data-idx="19" onclick="openModal(this.dataset.idx)">
         <td class="num">20</td>
-        <td class="num score">38</td>
-        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-mr-fa-van-hallweg-114/44431324/" target="_blank" onclick="event.stopPropagation()">Mr. F.A. van Hallweg 114</a>
-            <span class="src">funda</span></td>
-        <td class="num">489.000</td>
-        <td class="num">6.112</td>
-        <td class="num">102%</td>
-        <td>17/07/2026 (3d)</td>
-        <td><span class="reno reno-baixo">baixo</span></td>
-        <td><span class="badge">€/m² 18% abaixo da média Funda</span><span class="badge">✓ instapklaar</span></td>
+        <td class="num score">37</td>
+        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-meander-995/44487602/" target="_blank" onclick="event.stopPropagation()">Meander 995</a>
+            <span class="src">apify</span></td>
+        <td class="num">575.000</td>
+        <td class="num">5.928</td>
+        <td class="num">104%</td>
+        <td>05/06/2026 (46d)</td>
+        <td><span class="reno reno-medio">medio</span></td>
+        <td></td>
       </tr>
     
-      <tr data-city="amstelveen" data-price="550000" data-idx="20" onclick="openModal(this.dataset.idx)">
+      <tr data-city="amstelveen" data-district="amstelveen" data-price="595000" data-idx="20" onclick="openModal(this.dataset.idx)">
         <td class="num">21</td>
-        <td class="num score">36</td>
-        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-meander-997/44428831/" target="_blank" onclick="event.stopPropagation()">Meander 997</a>
-            <span class="src">funda</span></td>
-        <td class="num">550.000</td>
-        <td class="num">6.180</td>
-        <td class="num">103%</td>
-        <td>-</td>
+        <td class="num score">37</td>
+        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-westelijk-halfrond-145/44472250/" target="_blank" onclick="event.stopPropagation()">Westelijk Halfrond 145</a>
+            <span class="src">apify</span></td>
+        <td class="num">595.000</td>
+        <td class="num">5.459</td>
+        <td class="num">100%</td>
+        <td>03/06/2026 (48d)</td>
         <td><span class="reno reno-medio">medio</span></td>
         <td></td>
       </tr>
     
-      <tr data-city="amstelveen" data-price="415000" data-idx="21" onclick="openModal(this.dataset.idx)">
+      <tr data-city="amstelveen" data-district="amstelveen" data-price="550000" data-idx="21" onclick="openModal(this.dataset.idx)">
         <td class="num">22</td>
-        <td class="num score">35</td>
-        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-groenhof-72/44438162/" target="_blank" onclick="event.stopPropagation()">Groenhof 72</a>
-            <span class="src">funda</span></td>
-        <td class="num">415.000</td>
-        <td class="num">6.385</td>
-        <td class="num">107%</td>
-        <td>-</td>
+        <td class="num score">36</td>
+        <td><a href="https://www.funda.nl/detail/koop/amstelveen/huis-bosboom-toussaintlaan-43/44418292/" target="_blank" onclick="event.stopPropagation()">Bosboom Toussaintlaan 43</a>
+            <span class="src">apify</span></td>
+        <td class="num">550.000</td>
+        <td class="num">7.143</td>
+        <td class="num">117%</td>
+        <td>27/06/2026 (24d)</td>
         <td><span class="reno reno-medio">medio</span></td>
-        <td></td>
+        <td><span class="badge">label E</span><span class="badge">Preço 3% abaixo do WOZ</span></td>
       </tr>
     
-      <tr data-city="amstelveen" data-price="650000" data-idx="22" onclick="openModal(this.dataset.idx)">
+      <tr data-city="amstelveen" data-district="amstelveen" data-price="575000" data-idx="22" onclick="openModal(this.dataset.idx)">
         <td class="num">23</td>
-        <td class="num score">33</td>
-        <td><a href="https://www.funda.nl/detail/koop/amstelveen/huis-legmeerdijk-26/44435598/" target="_blank" onclick="event.stopPropagation()">Legmeerdijk 26</a>
-            <span class="src">funda</span></td>
-        <td class="num">650.000</td>
-        <td class="num">6.701</td>
-        <td class="num">111%</td>
-        <td>-</td>
+        <td class="num score">35</td>
+        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-haya-van-somerenlaan-62/44401611/" target="_blank" onclick="event.stopPropagation()">Haya van Somerenlaan 62</a>
+            <span class="src">apify</span></td>
+        <td class="num">575.000</td>
+        <td class="num">6.117</td>
+        <td class="num">100%</td>
+        <td>22/06/2026 (29d)</td>
         <td><span class="reno reno-medio">medio</span></td>
         <td></td>
       </tr>
     
-      <tr data-city="amstelveen" data-price="365000" data-idx="23" onclick="openModal(this.dataset.idx)">
+      <tr data-city="amstelveen" data-district="amstelveen" data-price="380000" data-idx="23" onclick="openModal(this.dataset.idx)">
         <td class="num">24</td>
-        <td class="num score">28</td>
-        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-goereesepad-115/80886884/" target="_blank" onclick="event.stopPropagation()">Goereesepad 115</a>
-            <span class="src">funda</span></td>
-        <td class="num">365.000</td>
-        <td class="num">6.083</td>
-        <td class="num">102%</td>
-        <td>-</td>
+        <td class="num score">34</td>
+        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-bos-en-vaartlaan-51/44475531/" target="_blank" onclick="event.stopPropagation()">Bos en Vaartlaan 51</a>
+            <span class="src">apify</span></td>
+        <td class="num">380.000</td>
+        <td class="num">6.909</td>
+        <td class="num">121%</td>
+        <td>29/05/2026 (53d)</td>
         <td><span class="reno reno-medio">medio</span></td>
-        <td><span class="badge">label G</span></td>
+        <td></td>
       </tr>
     
-      <tr data-city="amstelveen" data-price="375000" data-idx="24" onclick="openModal(this.dataset.idx)">
+      <tr data-city="amstelveen" data-district="amstelveen" data-price="575000" data-idx="24" onclick="openModal(this.dataset.idx)">
         <td class="num">25</td>
-        <td class="num score">27</td>
-        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-bos-en-vaartlaan-45/44426958/" target="_blank" onclick="event.stopPropagation()">Bos en Vaartlaan 45</a>
-            <span class="src">funda</span></td>
-        <td class="num">375.000</td>
-        <td class="num">6.818</td>
-        <td class="num">114%</td>
-        <td>-</td>
+        <td class="num score">34</td>
+        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-groenhof-320/44416680/" target="_blank" onclick="event.stopPropagation()">Groenhof 320</a>
+            <span class="src">apify</span></td>
+        <td class="num">575.000</td>
+        <td class="num">5.324</td>
+        <td class="num">100%</td>
+        <td>26/06/2026 (25d)</td>
         <td><span class="reno reno-medio">medio</span></td>
         <td></td>
       </tr>
     
-      <tr data-city="amstelveen" data-price="1150000" data-idx="25" onclick="openModal(this.dataset.idx)">
+      <tr data-city="amstelveen" data-district="amstelveen" data-price="450000" data-idx="25" onclick="openModal(this.dataset.idx)">
         <td class="num">26</td>
-        <td class="num score">20</td>
-        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-lindepark-75/44422103/" target="_blank" onclick="event.stopPropagation()">Lindepark 75</a>
-            <span class="src">funda</span></td>
-        <td class="num">1.150.000</td>
-        <td class="num">8.273</td>
-        <td class="num">128%</td>
-        <td>-</td>
+        <td class="num score">34</td>
+        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-lindenlaan-499/80852494/" target="_blank" onclick="event.stopPropagation()">Lindenlaan 499</a>
+            <span class="src">apify</span></td>
+        <td class="num">450.000</td>
+        <td class="num">6.429</td>
+        <td class="num">117%</td>
+        <td>12/06/2026 (39d)</td>
         <td><span class="reno reno-medio">medio</span></td>
         <td></td>
       </tr>
     
-      <tr data-city="amstelveen" data-price="299000" data-idx="26" onclick="openModal(this.dataset.idx)">
+      <tr data-city="amstelveen" data-district="amstelveen" data-price="550000" data-idx="26" onclick="openModal(this.dataset.idx)">
         <td class="num">27</td>
-        <td class="num score">17</td>
-        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-populierenlaan-93/44432086/" target="_blank" onclick="event.stopPropagation()">Populierenlaan 93</a>
-            <span class="src">funda</span></td>
-        <td class="num">299.000</td>
-        <td class="num">7.475</td>
+        <td class="num score">32</td>
+        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-mr-troelstralaan-30/43335143/" target="_blank" onclick="event.stopPropagation()">Mr. Troelstralaan 30</a>
+            <span class="src">apify</span></td>
+        <td class="num">550.000</td>
+        <td class="num">6.627</td>
         <td class="num">116%</td>
-        <td>-</td>
+        <td>29/04/2026 (83d)</td>
         <td><span class="reno reno-medio">medio</span></td>
-        <td><span class="badge">label E</span></td>
+        <td></td>
       </tr>
     
-      <tr data-city="amstelveen" data-price="750000" data-idx="27" onclick="openModal(this.dataset.idx)">
+      <tr data-city="amstelveen" data-district="amstelveen" data-price="525000" data-idx="27" onclick="openModal(this.dataset.idx)">
         <td class="num">28</td>
-        <td class="num score">10</td>
-        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-burgemeester-rijnderslaan-222/44431241/" target="_blank" onclick="event.stopPropagation()">Burgemeester Rijnderslaan 222</a>
-            <span class="src">funda</span></td>
-        <td class="num">750.000</td>
-        <td class="num">8.824</td>
-        <td class="num">137%</td>
-        <td>-</td>
+        <td class="num score">30</td>
+        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-populierenlaan-537/80846775/" target="_blank" onclick="event.stopPropagation()">Populierenlaan 537</a>
+            <span class="src">apify</span></td>
+        <td class="num">525.000</td>
+        <td class="num">6.034</td>
+        <td class="num">110%</td>
+        <td>10/06/2026 (41d)</td>
         <td><span class="reno reno-medio">medio</span></td>
         <td></td>
       </tr>
     
-      <tr data-city="amstelveen" data-price="1375000" data-idx="28" onclick="openModal(this.dataset.idx)">
+      <tr data-city="amstelveen" data-district="amstelveen" data-price="347500" data-idx="28" onclick="openModal(this.dataset.idx)">
         <td class="num">29</td>
-        <td class="num score">10</td>
-        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-klaasje-zevensterstraat-569/80887736/" target="_blank" onclick="event.stopPropagation()">Klaasje Zevensterstraat 569</a>
-            <span class="src">funda</span></td>
-        <td class="num">1.375.000</td>
-        <td class="num">8.088</td>
-        <td class="num">-</td>
-        <td>-</td>
+        <td class="num score">29</td>
+        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-tholenseweg-22/44483838/" target="_blank" onclick="event.stopPropagation()">Tholenseweg 22</a>
+            <span class="src">apify</span></td>
+        <td class="num">347.500</td>
+        <td class="num">6.950</td>
+        <td class="num">121%</td>
+        <td>11/06/2026 (40d)</td>
         <td><span class="reno reno-medio">medio</span></td>
         <td></td>
       </tr>
     
-      <tr data-city="amstelveen" data-price="2450000" data-idx="29" onclick="openModal(this.dataset.idx)">
+      <tr data-city="amstelveen" data-district="amstelveen" data-price="299000" data-idx="29" onclick="openModal(this.dataset.idx)">
         <td class="num">30</td>
-        <td class="num score">10</td>
-        <td><a href="https://www.funda.nl/detail/koop/amstelveen/huis-eikenrodelaan-1/44428397/" target="_blank" onclick="event.stopPropagation()">Eikenrodelaan 1</a>
-            <span class="src">funda</span></td>
-        <td class="num">2.450.000</td>
-        <td class="num">10.208</td>
-        <td class="num">170%</td>
-        <td>-</td>
+        <td class="num score">28</td>
+        <td><a href="https://www.funda.nl/detail/koop/amstelveen/appartement-newa-27/44439393/" target="_blank" onclick="event.stopPropagation()">Newa 27</a>
+            <span class="src">apify</span></td>
+        <td class="num">299.000</td>
+        <td class="num">6.953</td>
+        <td class="num">131%</td>
+        <td>17/07/2026 (4d)</td>
         <td><span class="reno reno-medio">medio</span></td>
-        <td></td>
+        <td><span class="badge">Preço 1% abaixo do WOZ</span></td>
       </tr>
     
     </tbody>
   </table>
+  </div>
 </div>
 
 <div id="modal" class="modal" onclick="if(event.target===this)closeModal()">
@@ -537,7 +559,7 @@
 
 <script>
   // Todos os dados coletados de cada imóvel (para o painel de detalhes)
-  var details = [{"address": "Mr. F.A. van Hallweg 112", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-mr-fa-van-hallweg-112/44414780/", "source": "funda", "city": "Amstelveen", "postal_code": "1181 ZW", "price": "360.000 €", "area_m2": 80, "price_per_m2": "4.500 €", "rooms": 4, "bedrooms": 3, "year_built": 1960, "energy_label": "C", "neighborhood": "1181", "nb_median": "5.992 €/m²", "nb_pct": "75%", "published": "06/07/2026", "days_on_market": "14 dias", "vve": "223 €/mês", "ownership_disp": "Eigendom", "funda_avg": "7.482 €/m²", "funda_pct": "60%", "score": "75", "sc_ppm2": 100, "sc_days": 8, "sc_energy": 66, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": ["€/m² 25% abaixo do bairro", "€/m² 25% abaixo do bairro"], "photo": "https://cloud.funda.nl/valentina_media/231/522/050.jpg?options=width=1440"}, {"address": "Lindenlaan 523", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-lindenlaan-523/80888468/", "source": "funda", "city": "Amstelveen", "postal_code": "1185 LT", "price": "375.000 €", "area_m2": 69, "price_per_m2": "5.435 €", "rooms": 3, "bedrooms": 2, "year_built": 1961, "energy_label": "B", "neighborhood": "1185", "nb_median": "6.440 €/m²", "nb_pct": "84%", "published": "10/07/2026", "days_on_market": "10 dias", "vve": "270 €/mês", "ownership_disp": "Eigendom", "funda_avg": "5.323 €/m²", "funda_pct": "102%", "score": "66", "sc_ppm2": 81, "sc_days": 6, "sc_energy": 83, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": ["€/m² 16% abaixo do bairro", "€/m² 16% abaixo do bairro"], "photo": "https://cloud.funda.nl/valentina_media/231/907/010.jpg?options=width=1440"}, {"address": "Gunterstein 1", "url": "https://www.funda.nl/detail/koop/amstelveen/huis-gunterstein-1/44413320/", "source": "funda", "city": "Amstelveen", "postal_code": "1187 GZ", "price": "775.000 €", "area_m2": 150, "price_per_m2": "5.167 €", "rooms": 6, "bedrooms": 4, "year_built": 1998, "energy_label": "B", "neighborhood": "1187", "nb_median": "6.013 €/m²", "nb_pct": "86%", "published": "06/07/2026", "days_on_market": "14 dias", "vve": null, "ownership_disp": "Eigendom", "funda_avg": "5.885 €/m²", "funda_pct": "88%", "score": "65", "sc_ppm2": 78, "sc_days": 8, "sc_energy": 83, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": ["€/m² 14% abaixo do bairro", "€/m² 14% abaixo do bairro"], "photo": "https://cloud.funda.nl/valentina_media/231/509/156.jpg?options=width=1440"}, {"address": "Populierenlaan 415", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-populierenlaan-415/44431391/", "source": "funda", "city": "Amstelveen", "postal_code": "1185 SR", "price": "415.000 €", "area_m2": 81, "price_per_m2": "5.123 €", "rooms": 4, "bedrooms": 3, "year_built": 1962, "energy_label": "D", "neighborhood": "1185", "nb_median": "6.440 €/m²", "nb_pct": "80%", "published": "17/07/2026", "days_on_market": "3 dias", "vve": "237 €/mês", "ownership_disp": "Eigendom", "funda_avg": "6.425 €/m²", "funda_pct": "80%", "score": "65", "sc_ppm2": 91, "sc_days": 2, "sc_energy": 50, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": ["€/m² 20% abaixo do bairro", "€/m² 20% abaixo do bairro"], "photo": "https://cloud.funda.nl/valentina_media/232/168/654.jpg?options=width=1440"}, {"address": "Meander 159", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-meander-159/44428776/", "source": "funda", "city": "Amstelveen", "postal_code": "1181 WN", "price": "525.000 €", "area_m2": 107, "price_per_m2": "4.907 €", "rooms": 3, "bedrooms": 2, "year_built": 1961, "energy_label": "D", "neighborhood": "1181", "nb_median": "5.992 €/m²", "nb_pct": "82%", "published": "07/07/2026", "days_on_market": "13 dias", "vve": "304 €/mês", "ownership_disp": "Eigendom", "funda_avg": "5.859 €/m²", "funda_pct": "84%", "score": "63", "sc_ppm2": 86, "sc_days": 7, "sc_energy": 50, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": ["✓ goed onderhouden", "€/m² 18% abaixo do bairro", "€/m² 18% abaixo do bairro"], "photo": "https://cloud.funda.nl/valentina_media/231/676/097.jpg?options=width=1440"}, {"address": "De Parel 13", "url": "https://www.funda.nl/detail/koop/amstelveen/huis-de-parel-13/44439664/", "source": "funda", "city": "Amstelveen", "postal_code": "1188 HK", "price": "700.000 €", "area_m2": 132, "price_per_m2": "5.303 €", "rooms": 5, "bedrooms": 4, "year_built": 1989, "energy_label": "B", "neighborhood": "1188", "nb_median": null, "nb_pct": null, "published": "16/07/2026", "days_on_market": "4 dias", "vve": null, "ownership_disp": "Eigendom", "funda_avg": "5.735 €/m²", "funda_pct": "92%", "score": "61", "sc_ppm2": 73, "sc_days": 2, "sc_energy": 83, "reno_effort": "baixo", "reno_summary": "Pronto pra morar / recém-reformado.", "notes": ["✓ goed onderhouden"], "photo": "https://cloud.funda.nl/valentina_media/232/074/507.jpg?options=width=1440"}, {"address": "Meander 863", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-meander-863/44420200/", "source": "funda", "city": "Amstelveen", "postal_code": "1181 WN", "price": "575.000 €", "area_m2": 110, "price_per_m2": "5.227 €", "rooms": 4, "bedrooms": 3, "year_built": 1961, "energy_label": "C", "neighborhood": "1181", "nb_median": "5.992 €/m²", "nb_pct": "87%", "published": "08/07/2026", "days_on_market": "12 dias", "vve": "273 €/mês", "ownership_disp": "Eigendom", "funda_avg": "5.859 €/m²", "funda_pct": "89%", "score": "60", "sc_ppm2": 76, "sc_days": 7, "sc_energy": 66, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": ["€/m² 13% abaixo do bairro", "€/m² 13% abaixo do bairro"], "photo": "https://cloud.funda.nl/valentina_media/231/769/635.jpg?options=width=1440"}, {"address": "Galerij 92", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-galerij-92/44425881/", "source": "funda", "city": "Amstelveen", "postal_code": "1181 ZR", "price": "535.000 €", "area_m2": 100, "price_per_m2": "5.350 €", "rooms": 4, "bedrooms": 3, "year_built": 1961, "energy_label": "C", "neighborhood": "1181", "nb_median": "5.992 €/m²", "nb_pct": "89%", "published": "06/07/2026", "days_on_market": "14 dias", "vve": "256 €/mês", "ownership_disp": "Eigendom", "funda_avg": "5.859 €/m²", "funda_pct": "91%", "score": "58", "sc_ppm2": 71, "sc_days": 8, "sc_energy": 66, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": ["€/m² 11% abaixo do bairro", "€/m² 11% abaixo do bairro"], "photo": "https://cloud.funda.nl/valentina_media/231/562/317.jpg?options=width=1440"}, {"address": "Max Havelaarlaan 109", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-max-havelaarlaan-109/80896308/", "source": "funda", "city": "Amstelveen", "postal_code": "1183 LN", "price": "815.000 €", "area_m2": 144, "price_per_m2": "5.660 €", "rooms": 5, "bedrooms": 4, "year_built": 1971, "energy_label": "B", "neighborhood": "1183", "nb_median": null, "nb_pct": null, "published": "20/07/2026", "days_on_market": "0 dias", "vve": "506 €/mês", "ownership_disp": null, "funda_avg": "6.150 €/m²", "funda_pct": "92%", "score": "54", "sc_ppm2": 62, "sc_days": 0, "sc_energy": 83, "reno_effort": "baixo", "reno_summary": "Pronto pra morar / recém-reformado.", "notes": ["✓ instapklaar", "✓ gemoderniseerd", "✓ hoogwaardige materialen"], "photo": "https://cloud.funda.nl/valentina_media/232/184/726.jpg?options=width=1440"}, {"address": "Rambaldolaan 5", "url": "https://www.funda.nl/detail/koop/amstelveen/huis-rambaldolaan-5/44413522/", "source": "funda", "city": "Amstelveen", "postal_code": "1185 JE", "price": "975.000 €", "area_m2": 150, "price_per_m2": "6.500 €", "rooms": 8, "bedrooms": 5, "year_built": 1938, "energy_label": "A", "neighborhood": "1185", "nb_median": "6.440 €/m²", "nb_pct": "101%", "published": "06/07/2026", "days_on_market": "14 dias", "vve": null, "ownership_disp": "Eigendom", "funda_avg": "6.292 €/m²", "funda_pct": "103%", "score": "50", "sc_ppm2": 48, "sc_days": 8, "sc_energy": 100, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": ["construção 1938"], "photo": "https://cloud.funda.nl/valentina_media/231/478/462.jpg?options=width=1440"}, {"address": "Soerlaan 4", "url": "https://www.funda.nl/detail/koop/amstelveen/huis-soerlaan-4/44414555/", "source": "funda", "city": "Amstelveen", "postal_code": "1185 JJ", "price": "1.295.000 €", "area_m2": 203, "price_per_m2": "6.379 €", "rooms": 7, "bedrooms": 5, "year_built": 1939, "energy_label": "B", "neighborhood": "1185", "nb_median": "6.440 €/m²", "nb_pct": "99%", "published": "06/07/2026", "days_on_market": "14 dias", "vve": null, "ownership_disp": "Eigendom", "funda_avg": "6.292 €/m²", "funda_pct": "101%", "score": "49", "sc_ppm2": 52, "sc_days": 8, "sc_energy": 83, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": ["construção 1939"], "photo": "https://cloud.funda.nl/valentina_media/231/518/485.jpg?options=width=1440"}, {"address": "Maarten Lutherweg 284", "url": "https://www.funda.nl/detail/koop/amstelveen/huis-maarten-lutherweg-284/44432423/", "source": "funda", "city": "Amstelveen", "postal_code": "1185 AX", "price": "625.000 €", "area_m2": 107, "price_per_m2": "5.841 €", "rooms": 5, "bedrooms": 4, "year_built": 1961, "energy_label": "E", "neighborhood": "1185", "nb_median": "6.440 €/m²", "nb_pct": "91%", "published": "17/07/2026", "days_on_market": "3 dias", "vve": null, "ownership_disp": "Eigendom", "funda_avg": "5.323 €/m²", "funda_pct": "110%", "score": "48", "sc_ppm2": 69, "sc_days": 2, "sc_energy": 33, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": ["label E", "€/m² 9% abaixo do bairro", "€/m² 9% abaixo do bairro"], "photo": "https://cloud.funda.nl/valentina_media/232/174/147.jpg?options=width=1440"}, {"address": "Van Heuven Goedhartlaan 494", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-van-heuven-goedhartlaan-494/44424676/", "source": "funda", "city": "Amstelveen", "postal_code": "1181 LM", "price": "395.000 €", "area_m2": 66, "price_per_m2": "5.985 €", "rooms": 3, "bedrooms": 2, "year_built": 1962, "energy_label": "C", "neighborhood": "1181", "nb_median": "5.992 €/m²", "nb_pct": "100%", "published": "11/07/2026", "days_on_market": "9 dias", "vve": "189 €/mês", "ownership_disp": "Eigendom", "funda_avg": "6.221 €/m²", "funda_pct": "96%", "score": "44", "sc_ppm2": 50, "sc_days": 5, "sc_energy": 66, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": [], "photo": "https://cloud.funda.nl/valentina_media/231/896/941.jpg?options=width=1440"}, {"address": "Vesuvius 26", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-vesuvius-26/44439133/", "source": "funda", "city": "Amstelveen", "postal_code": "1186 CL", "price": "325.000 €", "area_m2": 56, "price_per_m2": "5.804 €", "rooms": 2, "bedrooms": 1, "year_built": 1971, "energy_label": "D", "neighborhood": "1186", "nb_median": "5.976 €/m²", "nb_pct": "97%", "published": "16/07/2026", "days_on_market": "4 dias", "vve": "284 €/mês", "ownership_disp": "Eigendom", "funda_avg": "5.044 €/m²", "funda_pct": "115%", "score": "44", "sc_ppm2": 56, "sc_days": 2, "sc_energy": 50, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": ["✓ goed onderhouden"], "photo": "https://cloud.funda.nl/valentina_media/232/093/607.jpg?options=width=1440"}, {"address": "Taag 13", "url": "https://www.funda.nl/detail/koop/amstelveen/huis-taag-13/80893451/", "source": "funda", "city": "Amstelveen", "postal_code": "1186 LL", "price": "735.000 €", "area_m2": 123, "price_per_m2": "5.976 €", "rooms": 5, "bedrooms": 4, "year_built": 1969, "energy_label": "C", "neighborhood": "1186", "nb_median": "5.976 €/m²", "nb_pct": "100%", "published": "16/07/2026", "days_on_market": "4 dias", "vve": null, "ownership_disp": "Eigendom", "funda_avg": "6.450 €/m²", "funda_pct": "93%", "score": "44", "sc_ppm2": 50, "sc_days": 2, "sc_energy": 66, "reno_effort": "baixo", "reno_summary": "Pronto pra morar / recém-reformado.", "notes": ["✓ gemoderniseerd", "✓ goed onderhouden"], "photo": "https://cloud.funda.nl/valentina_media/232/082/522.jpg?options=width=1440"}, {"address": "De Zon 18", "url": "https://www.funda.nl/detail/koop/amstelveen/huis-de-zon-18/44426670/", "source": "funda", "city": "Amstelveen", "postal_code": "1188 GH", "price": "635.000 €", "area_m2": 103, "price_per_m2": "6.165 €", "rooms": 4, "bedrooms": 3, "year_built": 1987, "energy_label": "C", "neighborhood": "1188", "nb_median": null, "nb_pct": null, "published": "06/07/2026", "days_on_market": "14 dias", "vve": null, "ownership_disp": "Eigendom", "funda_avg": "5.735 €/m²", "funda_pct": "107%", "score": "42", "sc_ppm2": 45, "sc_days": 8, "sc_energy": 66, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": [], "photo": "https://cloud.funda.nl/valentina_media/231/594/340.jpg?options=width=1440"}, {"address": "Noorddammerlaan 83", "url": "https://www.funda.nl/detail/koop/amstelveen/huis-noorddammerlaan-83/80878418/", "source": "funda", "city": "Amstelveen", "postal_code": "1187 AC", "price": "1.395.000 €", "area_m2": 232, "price_per_m2": "6.013 €", "rooms": 5, "bedrooms": 3, "year_built": 1960, "energy_label": "A+", "neighborhood": "1187", "nb_median": "6.013 €/m²", "nb_pct": "100%", "published": "06/07/2026", "days_on_market": "14 dias", "vve": null, "ownership_disp": "Eigendom", "funda_avg": "6.472 €/m²", "funda_pct": "93%", "score": "42", "sc_ppm2": 50, "sc_days": 8, "sc_energy": 50, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": [], "photo": "https://cloud.funda.nl/valentina_media/231/524/796.jpg?options=width=1440"}, {"address": "Mr. F.A. van Hallweg 58", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-mr-fa-van-hallweg-58/44437160/", "source": "funda", "city": "Amstelveen", "postal_code": "1181 ZT", "price": "480.000 €", "area_m2": 80, "price_per_m2": "6.000 €", "rooms": 3, "bedrooms": 2, "year_built": 1960, "energy_label": "D", "neighborhood": "1181", "nb_median": "5.992 €/m²", "nb_pct": "100%", "published": "15/07/2026", "days_on_market": "5 dias", "vve": "276 €/mês", "ownership_disp": "Eigendom", "funda_avg": "7.482 €/m²", "funda_pct": "80%", "score": "40", "sc_ppm2": 50, "sc_days": 3, "sc_energy": 50, "reno_effort": "baixo", "reno_summary": "Pronto pra morar / recém-reformado.", "notes": ["✓ gerenoveerd"], "photo": "https://cloud.funda.nl/valentina_media/232/016/303.jpg?options=width=1440"}, {"address": "Mr. G. Groen van Prinstererlaan 137", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-mr-g-groen-van-prinstererlaan-137/44427740/", "source": "funda", "city": "Amstelveen", "postal_code": "1181 TS", "price": "385.000 €", "area_m2": 65, "price_per_m2": "5.923 €", "rooms": 3, "bedrooms": 2, "year_built": null, "energy_label": "E", "neighborhood": "1181", "nb_median": "5.992 €/m²", "nb_pct": "99%", "published": "06/07/2026", "days_on_market": "14 dias", "vve": "225 €/mês", "ownership_disp": "Eigendom", "funda_avg": "5.859 €/m²", "funda_pct": "101%", "score": "40", "sc_ppm2": 52, "sc_days": 8, "sc_energy": 33, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": ["label E"], "photo": "https://cloud.funda.nl/valentina_media/231/641/954.jpg?options=width=1440"}, {"address": "Mr. F.A. van Hallweg 114", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-mr-fa-van-hallweg-114/44431324/", "source": "funda", "city": "Amstelveen", "postal_code": "1181 ZW", "price": "489.000 €", "area_m2": 80, "price_per_m2": "6.112 €", "rooms": 4, "bedrooms": 3, "year_built": 1960, "energy_label": "D", "neighborhood": "1181", "nb_median": "5.992 €/m²", "nb_pct": "102%", "published": "17/07/2026", "days_on_market": "3 dias", "vve": "223 €/mês", "ownership_disp": "Eigendom", "funda_avg": "7.482 €/m²", "funda_pct": "82%", "score": "38", "sc_ppm2": 46, "sc_days": 2, "sc_energy": 50, "reno_effort": "baixo", "reno_summary": "Pronto pra morar / recém-reformado.", "notes": ["✓ instapklaar"], "photo": "https://cloud.funda.nl/valentina_media/232/169/877.jpg?options=width=1440"}, {"address": "Meander 997", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-meander-997/44428831/", "source": "funda", "city": "Amstelveen", "postal_code": "1181 WP", "price": "550.000 €", "area_m2": 89, "price_per_m2": "6.180 €", "rooms": 2, "bedrooms": null, "year_built": null, "energy_label": "D", "neighborhood": "1181", "nb_median": "5.992 €/m²", "nb_pct": "103%", "published": null, "days_on_market": null, "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "score": "36", "sc_ppm2": 44, "sc_days": 0, "sc_energy": 50, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": [], "photo": null}, {"address": "Groenhof 72", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-groenhof-72/44438162/", "source": "funda", "city": "Amstelveen", "postal_code": "1186 ET", "price": "415.000 €", "area_m2": 65, "price_per_m2": "6.385 €", "rooms": 1, "bedrooms": null, "year_built": null, "energy_label": "C", "neighborhood": "1186", "nb_median": "5.976 €/m²", "nb_pct": "107%", "published": null, "days_on_market": null, "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "score": "35", "sc_ppm2": 36, "sc_days": 0, "sc_energy": 66, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": [], "photo": null}, {"address": "Legmeerdijk 26", "url": "https://www.funda.nl/detail/koop/amstelveen/huis-legmeerdijk-26/44435598/", "source": "funda", "city": "Amstelveen", "postal_code": "1187 NE", "price": "650.000 €", "area_m2": 97, "price_per_m2": "6.701 €", "rooms": 3, "bedrooms": null, "year_built": null, "energy_label": "B", "neighborhood": "1187", "nb_median": "6.013 €/m²", "nb_pct": "111%", "published": null, "days_on_market": null, "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "score": "33", "sc_ppm2": 27, "sc_days": 0, "sc_energy": 83, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": [], "photo": "https://cloud.funda.nl/valentina_media/197/246/690.jpg?options=width=228"}, {"address": "Goereesepad 115", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-goereesepad-115/80886884/", "source": "funda", "city": "Amstelveen", "postal_code": "1181 EP", "price": "365.000 €", "area_m2": 60, "price_per_m2": "6.083 €", "rooms": 2, "bedrooms": null, "year_built": null, "energy_label": "G", "neighborhood": "1181", "nb_median": "5.992 €/m²", "nb_pct": "102%", "published": null, "days_on_market": null, "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "score": "28", "sc_ppm2": 47, "sc_days": 0, "sc_energy": 0, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": ["label G"], "photo": null}, {"address": "Bos en Vaartlaan 45", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-bos-en-vaartlaan-45/44426958/", "source": "funda", "city": "Amstelveen", "postal_code": "1181 AC", "price": "375.000 €", "area_m2": 55, "price_per_m2": "6.818 €", "rooms": 1, "bedrooms": null, "year_built": null, "energy_label": "C", "neighborhood": "1181", "nb_median": "5.992 €/m²", "nb_pct": "114%", "published": null, "days_on_market": null, "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "score": "27", "sc_ppm2": 22, "sc_days": 0, "sc_energy": 66, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": [], "photo": null}, {"address": "Lindepark 75", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-lindepark-75/44422103/", "source": "funda", "city": "Amstelveen", "postal_code": "1185 LD", "price": "1.150.000 €", "area_m2": 139, "price_per_m2": "8.273 €", "rooms": 3, "bedrooms": null, "year_built": null, "energy_label": "A", "neighborhood": "1185", "nb_median": "6.440 €/m²", "nb_pct": "128%", "published": null, "days_on_market": null, "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "score": "20", "sc_ppm2": 0, "sc_days": 0, "sc_energy": 100, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": [], "photo": "https://cloud.funda.nl/valentina_media/222/754/577.jpg?options=width=228"}, {"address": "Populierenlaan 93", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-populierenlaan-93/44432086/", "source": "funda", "city": "Amstelveen", "postal_code": "1185 SG", "price": "299.000 €", "area_m2": 40, "price_per_m2": "7.475 €", "rooms": 1, "bedrooms": null, "year_built": null, "energy_label": "E", "neighborhood": "1185", "nb_median": "6.440 €/m²", "nb_pct": "116%", "published": null, "days_on_market": null, "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "score": "17", "sc_ppm2": 18, "sc_days": 0, "sc_energy": 33, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": ["label E"], "photo": "https://cloud.funda.nl/valentina_media/176/345/158.jpg?options=width=228"}, {"address": "Burgemeester Rijnderslaan 222", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-burgemeester-rijnderslaan-222/44431241/", "source": "funda", "city": "Amstelveen", "postal_code": "1185 MC", "price": "750.000 €", "area_m2": 85, "price_per_m2": "8.824 €", "rooms": 2, "bedrooms": null, "year_built": null, "energy_label": "A+", "neighborhood": "1185", "nb_median": "6.440 €/m²", "nb_pct": "137%", "published": null, "days_on_market": null, "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "score": "10", "sc_ppm2": 0, "sc_days": 0, "sc_energy": 50, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": [], "photo": "https://cloud.funda.nl/valentina_media/146/249/716.jpg?options=width=228"}, {"address": "Klaasje Zevensterstraat 569", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-klaasje-zevensterstraat-569/80887736/", "source": "funda", "city": "Amstelveen", "postal_code": "1183 MD", "price": "1.375.000 €", "area_m2": 170, "price_per_m2": "8.088 €", "rooms": 3, "bedrooms": null, "year_built": null, "energy_label": "A+", "neighborhood": "1183", "nb_median": null, "nb_pct": null, "published": null, "days_on_market": null, "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "score": "10", "sc_ppm2": 0, "sc_days": 0, "sc_energy": 50, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": [], "photo": "https://cloud.funda.nl/valentina_media/225/550/833.jpg?options=width=228"}, {"address": "Eikenrodelaan 1", "url": "https://www.funda.nl/detail/koop/amstelveen/huis-eikenrodelaan-1/44428397/", "source": "funda", "city": "Amstelveen", "postal_code": "1181 DE", "price": "2.450.000 €", "area_m2": 240, "price_per_m2": "10.208 €", "rooms": 6, "bedrooms": null, "year_built": null, "energy_label": "A+", "neighborhood": "1181", "nb_median": "5.992 €/m²", "nb_pct": "170%", "published": null, "days_on_market": null, "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "score": "10", "sc_ppm2": 0, "sc_days": 0, "sc_energy": 50, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": [], "photo": "https://cloud.funda.nl/valentina_media/134/991/622.jpg?options=width=228"}];
+  var details = [{"address": "Meander 297", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-meander-297/43378022/", "source": "apify", "city": "Amstelveen", "postal_code": "1181 WN", "price": "599.000 €", "area_m2": 126, "price_per_m2": "4.754 €", "rooms": 4, "bedrooms": 3, "year_built": 1961, "energy_label": "E", "status": null, "neighborhood": "1181", "nb_median": "5.724 €/m²", "nb_pct": "83%", "published": "13/03/2026", "days_on_market": "130 dias", "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "woz": "583.000 €", "woz_year": 2025, "pct_woz": "103%", "score": "65", "sc_woz": 43, "sc_ppm2": 84, "sc_reno": 55, "sc_days": 72, "penalties": 0, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": ["label E", "€/m² 17% abaixo do bairro", "130 dias no mercado", "€/m² 17% abaixo do bairro", "130 dias no mercado"], "photo": "https://cloud.funda.nl/valentina_media/225/744/696.jpg?options=width=800"}, {"address": "Fideliolaan 27", "url": "https://www.funda.nl/detail/koop/amstelveen/huis-fideliolaan-27/44451813/", "source": "apify", "city": "Amstelveen", "postal_code": "1183 PG", "price": "600.000 €", "area_m2": 125, "price_per_m2": "4.800 €", "rooms": 5, "bedrooms": 4, "year_built": 1967, "energy_label": "D", "status": null, "neighborhood": "1183", "nb_median": "5.459 €/m²", "nb_pct": "88%", "published": "22/05/2026", "days_on_market": "60 dias", "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "woz": "658.000 €", "woz_year": 2025, "pct_woz": "91%", "score": "60", "sc_woz": 72, "sc_ppm2": 74, "sc_reno": 55, "sc_days": 33, "penalties": 0, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": ["€/m² 12% abaixo do bairro", "Preço 9% abaixo do WOZ", "€/m² 12% abaixo do bairro"], "photo": "https://cloud.funda.nl/tiara-media/fb5e44c8-bf46-4d27-8ae5-d7cc63505c79/0527b40e-4eb4-4c2a-8806-04eb7f16bea3?options=width=800"}, {"address": "Mr. G. Groen van Prinstererlaan 341", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-mr-g-groen-van-prinstererlaan-341/43279364/", "source": "apify", "city": "Amstelveen", "postal_code": "1181 TW", "price": "385.000 €", "area_m2": 64, "price_per_m2": "6.016 €", "rooms": 3, "bedrooms": 2, "year_built": 1962, "energy_label": "G", "status": null, "neighborhood": "1181", "nb_median": "5.724 €/m²", "nb_pct": "105%", "published": "05/12/2025", "days_on_market": "228 dias", "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "woz": "386.000 €", "woz_year": 2025, "pct_woz": "100%", "score": "59", "sc_woz": 51, "sc_ppm2": 40, "sc_reno": 55, "sc_days": 100, "penalties": 0, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": ["label G", "228 dias no mercado", "Preço 0% abaixo do WOZ", "228 dias no mercado"], "photo": "https://cloud.funda.nl/valentina_media/221/984/998.jpg?options=width=800"}, {"address": "Mr. F.A. van Hallweg 112", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-mr-fa-van-hallweg-112/44414780/", "source": "apify", "city": "Amstelveen", "postal_code": "1181 ZW", "price": "360.000 €", "area_m2": 80, "price_per_m2": "4.500 €", "rooms": 4, "bedrooms": 3, "year_built": 1960, "energy_label": "C", "status": null, "neighborhood": "1181", "nb_median": "5.724 €/m²", "nb_pct": "79%", "published": "02/07/2026", "days_on_market": "19 dias", "vve": "223 €/mês", "ownership_disp": "Eigendom (propriedade plena)", "funda_avg": "7.482 €/m²", "funda_pct": "60%", "woz": "391.000 €", "woz_year": 2025, "pct_woz": "92%", "score": "58", "sc_woz": 70, "sc_ppm2": 93, "sc_reno": 55, "sc_days": 11, "penalties": 2, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": ["€/m² 21% abaixo do bairro", "⚠ VvE €223/mês (−2)", "Preço 8% abaixo do WOZ", "€/m² 21% abaixo do bairro", "⚠ VvE €223/mês (−2)"], "photo": "https://cloud.funda.nl/tiara-media/72cc951a-e48d-4557-8910-fcc90348ce49/a92ef9be-ca84-43ae-8998-933e90bbd597?options=width=800"}, {"address": "Meander 295", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-meander-295/43397495/", "source": "apify", "city": "Amstelveen", "postal_code": "1181 WN", "price": "500.000 €", "area_m2": 97, "price_per_m2": "5.155 €", "rooms": 4, "bedrooms": 3, "year_built": 1961, "energy_label": "B", "status": null, "neighborhood": "1181", "nb_median": "5.724 €/m²", "nb_pct": "90%", "published": "28/03/2026", "days_on_market": "115 dias", "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "woz": "476.000 €", "woz_year": 2025, "pct_woz": "105%", "score": "58", "sc_woz": 38, "sc_ppm2": 70, "sc_reno": 55, "sc_days": 64, "penalties": 0, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": ["€/m² 10% abaixo do bairro", "115 dias no mercado", "€/m² 10% abaixo do bairro", "115 dias no mercado"], "photo": "https://cloud.funda.nl/tiara-media/08f5c144-4d06-401b-8f34-0560461f6a7c/2b80bd12-c4cc-4c7d-9faf-c428cc0ef3ff?options=width=800"}, {"address": "Franciscus van Assisiëlaan 39", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-franciscus-van-assisielaan-39/89760222/", "source": "apify", "city": "Amstelveen", "postal_code": "1185 CE", "price": "425.000 €", "area_m2": 84, "price_per_m2": "5.060 €", "rooms": 4, "bedrooms": 3, "year_built": 1961, "energy_label": "B", "status": null, "neighborhood": "1185", "nb_median": "5.488 €/m²", "nb_pct": "92%", "published": "05/04/2026", "days_on_market": "107 dias", "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "woz": "406.000 €", "woz_year": 2025, "pct_woz": "105%", "score": "56", "sc_woz": 38, "sc_ppm2": 66, "sc_reno": 55, "sc_days": 59, "penalties": 0, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": ["107 dias no mercado", "107 dias no mercado"], "photo": "https://cloud.funda.nl/tiara-media/e6ca826a-8f54-40b9-a1c3-2a0375b2b923/c58da423-dd13-46ff-bb9f-bf0e73ad0fd1?options=width=800"}, {"address": "Vesuvius 19", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-vesuvius-19/43347454/", "source": "apify", "city": "Amstelveen", "postal_code": "1186 CK", "price": "500.000 €", "area_m2": 97, "price_per_m2": "5.155 €", "rooms": 3, "bedrooms": 2, "year_built": 1971, "energy_label": "C", "status": null, "neighborhood": "1186", "nb_median": "5.324 €/m²", "nb_pct": "97%", "published": "08/05/2026", "days_on_market": "74 dias", "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "woz": "502.000 €", "woz_year": 2025, "pct_woz": "100%", "score": "52", "sc_woz": 51, "sc_ppm2": 56, "sc_reno": 55, "sc_days": 41, "penalties": 0, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": ["Preço 0% abaixo do WOZ"], "photo": "https://cloud.funda.nl/tiara-media/e15d4cfa-360b-4036-9c72-0bffc1741d26/b5d3941d-efaa-454f-8c68-5e89e1b7a32b?options=width=800"}, {"address": "Haya van Somerenlaan 102", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-haya-van-somerenlaan-102/44412456/", "source": "apify", "city": "Amstelveen", "postal_code": "1187 RB", "price": "500.000 €", "area_m2": 94, "price_per_m2": "5.319 €", "rooms": 3, "bedrooms": 2, "year_built": 1991, "energy_label": "B", "status": null, "neighborhood": "1187", "nb_median": "6.117 €/m²", "nb_pct": "87%", "published": "01/07/2026", "days_on_market": "20 dias", "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "woz": "484.000 €", "woz_year": 2025, "pct_woz": "103%", "score": "50", "sc_woz": 42, "sc_ppm2": 76, "sc_reno": 55, "sc_days": 11, "penalties": 0, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": ["€/m² 13% abaixo do bairro", "€/m² 13% abaixo do bairro"], "photo": "https://cloud.funda.nl/tiara-media/ffcd25a3-1b91-4af1-b022-403ad8f2c252/5e00b55c-1646-4517-9728-d335ada3ff41?options=width=800"}, {"address": "Meander 37", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-meander-37/80843091/", "source": "apify", "city": "Amstelveen", "postal_code": "1181 WN", "price": "515.000 €", "area_m2": 110, "price_per_m2": "4.682 €", "rooms": 3, "bedrooms": 2, "year_built": 1961, "energy_label": "C", "status": null, "neighborhood": "1181", "nb_median": "5.724 €/m²", "nb_pct": "82%", "published": "05/06/2026", "days_on_market": "46 dias", "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "woz": "445.000 €", "woz_year": 2025, "pct_woz": "116%", "score": "50", "sc_woz": 11, "sc_ppm2": 86, "sc_reno": 55, "sc_days": 26, "penalties": 0, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": ["€/m² 18% abaixo do bairro", "€/m² 18% abaixo do bairro"], "photo": "https://cloud.funda.nl/tiara-media/be104b88-96cd-4037-a8c6-d73922212a33/74e604d1-f27c-4c66-a9e8-14ae0219d128?options=width=800"}, {"address": "Meander 81", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-meander-81/43315669/", "source": "apify", "city": "Amstelveen", "postal_code": "1181 WN", "price": "435.000 €", "area_m2": 76, "price_per_m2": "5.724 €", "rooms": 3, "bedrooms": 2, "year_built": 1961, "energy_label": "D", "status": null, "neighborhood": "1181", "nb_median": "5.724 €/m²", "nb_pct": "100%", "published": "14/04/2026", "days_on_market": "98 dias", "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "woz": "406.000 €", "woz_year": 2025, "pct_woz": "107%", "score": "49", "sc_woz": 32, "sc_ppm2": 50, "sc_reno": 55, "sc_days": 54, "penalties": 0, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": ["98 dias no mercado", "98 dias no mercado"], "photo": "https://cloud.funda.nl/valentina_media/227/173/912.jpg?options=width=800"}, {"address": "De Parel 26", "url": "https://www.funda.nl/detail/koop/amstelveen/huis-de-parel-26/44401438/", "source": "apify", "city": "Amstelveen", "postal_code": "1188 HP", "price": "600.000 €", "area_m2": 111, "price_per_m2": "5.405 €", "rooms": 5, "bedrooms": 4, "year_built": 1989, "energy_label": "C", "status": null, "neighborhood": "1188", "nb_median": null, "nb_pct": null, "published": "22/06/2026", "days_on_market": "29 dias", "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "woz": "631.000 €", "woz_year": 2025, "pct_woz": "95%", "score": "48", "sc_woz": 62, "sc_ppm2": 53, "sc_reno": 55, "sc_days": 16, "penalties": 0, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": ["Preço 5% abaixo do WOZ"], "photo": "https://cloud.funda.nl/tiara-media/dbae1a63-1a79-43a3-b22f-153c6c734351/e9cdfda2-957a-4a9b-84c7-c42059030f1e?options=width=800"}, {"address": "Groenhof 1", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-groenhof-1/44406292/", "source": "apify", "city": "Amstelveen", "postal_code": "1186 EP", "price": "500.000 €", "area_m2": 97, "price_per_m2": "5.155 €", "rooms": 5, "bedrooms": 4, "year_built": null, "energy_label": "D", "status": null, "neighborhood": "1186", "nb_median": "5.324 €/m²", "nb_pct": "97%", "published": "18/06/2026", "days_on_market": "33 dias", "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "woz": null, "woz_year": null, "pct_woz": null, "score": "47", "sc_woz": 50, "sc_ppm2": 56, "sc_reno": 55, "sc_days": 18, "penalties": 0, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": [], "photo": "https://cloud.funda.nl/tiara-media/22bb4807-75f1-4b83-93f8-4bf76a96873d/8b730fcb-deaa-4cd9-ad79-e1e048607246?options=width=800"}, {"address": "Kringloop 275", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-kringloop-275/89791781/", "source": "apify", "city": "Amstelveen", "postal_code": "1186 HA", "price": "369.000 €", "area_m2": 62, "price_per_m2": "5.952 €", "rooms": 2, "bedrooms": 1, "year_built": 1975, "energy_label": "C", "status": null, "neighborhood": "1186", "nb_median": "5.324 €/m²", "nb_pct": "112%", "published": "30/04/2026", "days_on_market": "82 dias", "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "woz": "364.000 €", "woz_year": 2025, "pct_woz": "101%", "score": "43", "sc_woz": 46, "sc_ppm2": 26, "sc_reno": 55, "sc_days": 46, "penalties": 0, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": [], "photo": "https://cloud.funda.nl/tiara-media/c95ad2d5-2ffc-4143-ae75-be9dc0ba2a87/eaeaf047-6c9d-4dc4-b047-987eaf156cfd?options=width=800"}, {"address": "Tiengemeten 61", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-tiengemeten-61/44491420/", "source": "apify", "city": "Amstelveen", "postal_code": "1181 CP", "price": "435.000 €", "area_m2": 79, "price_per_m2": "5.506 €", "rooms": 4, "bedrooms": 3, "year_built": 1966, "energy_label": "E", "status": null, "neighborhood": "1181", "nb_median": "5.724 €/m²", "nb_pct": "96%", "published": "15/06/2026", "days_on_market": "36 dias", "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "woz": "395.000 €", "woz_year": 2025, "pct_woz": "110%", "score": "43", "sc_woz": 25, "sc_ppm2": 58, "sc_reno": 55, "sc_days": 20, "penalties": 0, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": ["label E"], "photo": "https://cloud.funda.nl/tiara-media/2c9276e3-330f-4af7-9c86-0dc6315c22a3/052a00fc-f62f-473e-ba5b-649d2a71aea1?options=width=800"}, {"address": "Amberlaan 68", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-amberlaan-68/44418067/", "source": "apify", "city": "Amstelveen", "postal_code": "1185 RM", "price": "439.000 €", "area_m2": 80, "price_per_m2": "5.488 €", "rooms": 3, "bedrooms": 2, "year_built": 1962, "energy_label": "C", "status": null, "neighborhood": "1185", "nb_median": "5.488 €/m²", "nb_pct": "100%", "published": "26/06/2026", "days_on_market": "25 dias", "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "woz": "408.000 €", "woz_year": 2025, "pct_woz": "108%", "score": "40", "sc_woz": 31, "sc_ppm2": 50, "sc_reno": 55, "sc_days": 14, "penalties": 0, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": [], "photo": "https://cloud.funda.nl/tiara-media/57d5de8e-8d95-49fe-ac5a-7a998ba42d1e/1420d22b-f5f9-4876-b33f-876875f5b62a?options=width=800"}, {"address": "Kostverlorenhof 113", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-kostverlorenhof-113/44412646/", "source": "apify", "city": "Amstelveen", "postal_code": "1183 HJ", "price": "425.000 €", "area_m2": 77, "price_per_m2": "5.519 €", "rooms": 3, "bedrooms": 2, "year_built": 1971, "energy_label": "A", "status": null, "neighborhood": "1183", "nb_median": "5.459 €/m²", "nb_pct": "101%", "published": "01/07/2026", "days_on_market": "20 dias", "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "woz": "404.000 €", "woz_year": 2025, "pct_woz": "105%", "score": "40", "sc_woz": 37, "sc_ppm2": 48, "sc_reno": 55, "sc_days": 11, "penalties": 0, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": [], "photo": "https://cloud.funda.nl/tiara-media/f8467337-2341-4e62-8ca1-4f79ffa15e87/58866501-d0d2-4626-b8f4-7245055f4012?options=width=800"}, {"address": "Populierenlaan 385", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-populierenlaan-385/44402321/", "source": "apify", "city": "Amstelveen", "postal_code": "1185 SP", "price": "435.000 €", "area_m2": 80, "price_per_m2": "5.438 €", "rooms": 4, "bedrooms": 3, "year_built": 1962, "energy_label": "C", "status": null, "neighborhood": "1185", "nb_median": "5.488 €/m²", "nb_pct": "99%", "published": "23/06/2026", "days_on_market": "28 dias", "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "woz": "391.000 €", "woz_year": 2025, "pct_woz": "111%", "score": "40", "sc_woz": 22, "sc_ppm2": 52, "sc_reno": 55, "sc_days": 16, "penalties": 0, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": [], "photo": "https://cloud.funda.nl/tiara-media/15315153-f47a-49d9-ac37-d464889a8618/b0a03d2b-6b50-4c05-8193-34201db1e756?options=width=800"}, {"address": "Zonnesteinhof 10", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-zonnesteinhof-10/44453646/", "source": "apify", "city": "Amstelveen", "postal_code": "1181 NH", "price": "475.000 €", "area_m2": 77, "price_per_m2": "6.169 €", "rooms": 3, "bedrooms": 2, "year_built": 1961, "energy_label": "D", "status": null, "neighborhood": "1181", "nb_median": "5.724 €/m²", "nb_pct": "108%", "published": "20/05/2026", "days_on_market": "62 dias", "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "woz": "425.000 €", "woz_year": 2025, "pct_woz": "112%", "score": "38", "sc_woz": 21, "sc_ppm2": 34, "sc_reno": 55, "sc_days": 34, "penalties": 0, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": [], "photo": "https://cloud.funda.nl/tiara-media/43800588-a39e-4837-bc0d-045d8bb0c545/d61b9a82-14f9-40a1-bd20-7e55d3a66fe6?options=width=800"}, {"address": "Galerij 92", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-galerij-92/44425881/", "source": "apify", "city": "Amstelveen", "postal_code": "1181 ZR", "price": "535.000 €", "area_m2": 100, "price_per_m2": "5.350 €", "rooms": 4, "bedrooms": 3, "year_built": 1961, "energy_label": "C", "status": null, "neighborhood": "1181", "nb_median": "5.724 €/m²", "nb_pct": "94%", "published": "03/07/2026", "days_on_market": "18 dias", "vve": "256 €/mês", "ownership_disp": "Eigendom (propriedade plena)", "funda_avg": "5.859 €/m²", "funda_pct": "91%", "woz": "472.000 €", "woz_year": 2025, "pct_woz": "113%", "score": "37", "sc_woz": 17, "sc_ppm2": 63, "sc_reno": 55, "sc_days": 10, "penalties": 4, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": ["⚠ VvE €256/mês (−4)", "⚠ VvE €256/mês (−4)"], "photo": "https://cloud.funda.nl/tiara-media/dd18bcd7-3272-44f1-baff-c42fe9f74a59/44f3a90d-c389-40dc-91d8-1ef313553037?options=width=800"}, {"address": "Meander 995", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-meander-995/44487602/", "source": "apify", "city": "Amstelveen", "postal_code": "1181 WP", "price": "575.000 €", "area_m2": 97, "price_per_m2": "5.928 €", "rooms": 3, "bedrooms": 2, "year_built": 1961, "energy_label": "C", "status": null, "neighborhood": "1181", "nb_median": "5.724 €/m²", "nb_pct": "104%", "published": "05/06/2026", "days_on_market": "46 dias", "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "woz": "501.000 €", "woz_year": 2025, "pct_woz": "115%", "score": "37", "sc_woz": 13, "sc_ppm2": 43, "sc_reno": 55, "sc_days": 26, "penalties": 0, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": [], "photo": "https://cloud.funda.nl/tiara-media/ea485976-5b3d-4f63-8745-025325ae9f54/f580eb57-1b5a-40b3-8879-b5d11ec9c85e?options=width=800"}, {"address": "Westelijk Halfrond 145", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-westelijk-halfrond-145/44472250/", "source": "apify", "city": "Amstelveen", "postal_code": "1183 HT", "price": "595.000 €", "area_m2": 109, "price_per_m2": "5.459 €", "rooms": 4, "bedrooms": 3, "year_built": 1974, "energy_label": "C", "status": null, "neighborhood": "1183", "nb_median": "5.459 €/m²", "nb_pct": "100%", "published": "03/06/2026", "days_on_market": "48 dias", "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "woz": "492.000 €", "woz_year": 2025, "pct_woz": "121%", "score": "37", "sc_woz": 0, "sc_ppm2": 50, "sc_reno": 55, "sc_days": 27, "penalties": 0, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": [], "photo": "https://cloud.funda.nl/tiara-media/db910ff2-8859-4162-a12a-055df52a950d/2ee637d2-f82e-4ebb-8496-e4f5d148afca?options=width=800"}, {"address": "Bosboom Toussaintlaan 43", "url": "https://www.funda.nl/detail/koop/amstelveen/huis-bosboom-toussaintlaan-43/44418292/", "source": "apify", "city": "Amstelveen", "postal_code": "1187 CP", "price": "550.000 €", "area_m2": 77, "price_per_m2": "7.143 €", "rooms": 5, "bedrooms": 3, "year_built": 1963, "energy_label": "E", "status": null, "neighborhood": "1187", "nb_median": "6.117 €/m²", "nb_pct": "117%", "published": "27/06/2026", "days_on_market": "24 dias", "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "woz": "569.000 €", "woz_year": 2025, "pct_woz": "97%", "score": "36", "sc_woz": 58, "sc_ppm2": 16, "sc_reno": 55, "sc_days": 13, "penalties": 0, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": ["label E", "Preço 3% abaixo do WOZ"], "photo": "https://cloud.funda.nl/tiara-media/12cba13c-7eda-4aad-8fd9-3c7f03cace11/7352ff31-1471-4bd6-b3ba-52b3e9f4863f?options=width=800"}, {"address": "Haya van Somerenlaan 62", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-haya-van-somerenlaan-62/44401611/", "source": "apify", "city": "Amstelveen", "postal_code": "1187 RB", "price": "575.000 €", "area_m2": 94, "price_per_m2": "6.117 €", "rooms": 3, "bedrooms": 2, "year_built": 1991, "energy_label": "B", "status": null, "neighborhood": "1187", "nb_median": "6.117 €/m²", "nb_pct": "100%", "published": "22/06/2026", "days_on_market": "29 dias", "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "woz": "484.000 €", "woz_year": 2025, "pct_woz": "119%", "score": "35", "sc_woz": 3, "sc_ppm2": 50, "sc_reno": 55, "sc_days": 16, "penalties": 0, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": [], "photo": "https://cloud.funda.nl/tiara-media/8d5e160c-572a-4bb6-8d83-5adf2c3d0ecb/1f8e21df-cd27-445f-ae8e-b196b5ce8822?options=width=800"}, {"address": "Bos en Vaartlaan 51", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-bos-en-vaartlaan-51/44475531/", "source": "apify", "city": "Amstelveen", "postal_code": "1181 AC", "price": "380.000 €", "area_m2": 55, "price_per_m2": "6.909 €", "rooms": 3, "bedrooms": 2, "year_built": 1965, "energy_label": "C", "status": null, "neighborhood": "1181", "nb_median": "5.724 €/m²", "nb_pct": "121%", "published": "29/05/2026", "days_on_market": "53 dias", "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "woz": "376.000 €", "woz_year": 2025, "pct_woz": "101%", "score": "34", "sc_woz": 47, "sc_ppm2": 9, "sc_reno": 55, "sc_days": 29, "penalties": 0, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": [], "photo": "https://cloud.funda.nl/tiara-media/af3e7ad4-a995-43b8-9688-98f523930e35/3b7bd30c-f3a6-4ae7-ae62-74660b762ef0?options=width=800"}, {"address": "Groenhof 320", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-groenhof-320/44416680/", "source": "apify", "city": "Amstelveen", "postal_code": "1186 GJ", "price": "575.000 €", "area_m2": 108, "price_per_m2": "5.324 €", "rooms": 3, "bedrooms": 2, "year_built": 1973, "energy_label": "B", "status": null, "neighborhood": "1186", "nb_median": "5.324 €/m²", "nb_pct": "100%", "published": "26/06/2026", "days_on_market": "25 dias", "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "woz": "459.000 €", "woz_year": 2025, "pct_woz": "125%", "score": "34", "sc_woz": 0, "sc_ppm2": 50, "sc_reno": 55, "sc_days": 14, "penalties": 0, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": [], "photo": "https://cloud.funda.nl/tiara-media/f16cf9c6-5100-49be-b8ce-50b6f1b32a74/3a4dccd6-7d57-49ae-a5d5-af0449da7e0b?options=width=800"}, {"address": "Lindenlaan 499", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-lindenlaan-499/80852494/", "source": "apify", "city": "Amstelveen", "postal_code": "1185 LT", "price": "450.000 €", "area_m2": 70, "price_per_m2": "6.429 €", "rooms": 4, "bedrooms": 3, "year_built": 1961, "energy_label": "A", "status": null, "neighborhood": "1185", "nb_median": "5.488 €/m²", "nb_pct": "117%", "published": "12/06/2026", "days_on_market": "39 dias", "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "woz": "436.000 €", "woz_year": 2025, "pct_woz": "103%", "score": "34", "sc_woz": 42, "sc_ppm2": 16, "sc_reno": 55, "sc_days": 22, "penalties": 0, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": [], "photo": "https://cloud.funda.nl/tiara-media/1f0873f3-f64a-4255-aabd-e3df5a2bdbed/528a762b-0b8d-4aeb-b37a-efcb9dfe9d13?options=width=800"}, {"address": "Mr. Troelstralaan 30", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-mr-troelstralaan-30/43335143/", "source": "apify", "city": "Amstelveen", "postal_code": "1181 VE", "price": "550.000 €", "area_m2": 83, "price_per_m2": "6.627 €", "rooms": 4, "bedrooms": 2, "year_built": 1951, "energy_label": "C", "status": null, "neighborhood": "1181", "nb_median": "5.724 €/m²", "nb_pct": "116%", "published": "29/04/2026", "days_on_market": "83 dias", "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "woz": "466.000 €", "woz_year": 2025, "pct_woz": "118%", "score": "32", "sc_woz": 5, "sc_ppm2": 18, "sc_reno": 55, "sc_days": 46, "penalties": 0, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": [], "photo": "https://cloud.funda.nl/tiara-media/9b0d1b33-becb-4d37-8a00-299137c84ca1/ce23b940-38a3-40eb-8e2c-31c3e372493d?options=width=800"}, {"address": "Populierenlaan 537", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-populierenlaan-537/80846775/", "source": "apify", "city": "Amstelveen", "postal_code": "1185 SW", "price": "525.000 €", "area_m2": 87, "price_per_m2": "6.034 €", "rooms": 3, "bedrooms": 2, "year_built": 1963, "energy_label": "C", "status": null, "neighborhood": "1185", "nb_median": "5.488 €/m²", "nb_pct": "110%", "published": "10/06/2026", "days_on_market": "41 dias", "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "woz": "437.000 €", "woz_year": 2025, "pct_woz": "120%", "score": "30", "sc_woz": 0, "sc_ppm2": 30, "sc_reno": 55, "sc_days": 23, "penalties": 0, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": [], "photo": "https://cloud.funda.nl/tiara-media/2eb6d2b2-2003-4294-9c99-d01d66d2ff15/f67d46a4-7be5-4a6f-b0b8-408476454b5d?options=width=800"}, {"address": "Tholenseweg 22", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-tholenseweg-22/44483838/", "source": "apify", "city": "Amstelveen", "postal_code": "1181 KE", "price": "347.500 €", "area_m2": 50, "price_per_m2": "6.950 €", "rooms": 2, "bedrooms": 1, "year_built": 1970, "energy_label": "C", "status": null, "neighborhood": "1181", "nb_median": "5.724 €/m²", "nb_pct": "121%", "published": "11/06/2026", "days_on_market": "40 dias", "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "woz": "322.000 €", "woz_year": 2025, "pct_woz": "108%", "score": "29", "sc_woz": 30, "sc_ppm2": 7, "sc_reno": 55, "sc_days": 22, "penalties": 0, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": [], "photo": "https://cloud.funda.nl/tiara-media/60f98d07-6986-495e-98fd-be7429638aae/0b7e7031-f012-4853-b703-1b086d249be0?options=width=800"}, {"address": "Newa 27", "url": "https://www.funda.nl/detail/koop/amstelveen/appartement-newa-27/44439393/", "source": "apify", "city": "Amstelveen", "postal_code": "1186 KD", "price": "299.000 €", "area_m2": 43, "price_per_m2": "6.953 €", "rooms": 2, "bedrooms": 1, "year_built": 1972, "energy_label": "A", "status": null, "neighborhood": "1186", "nb_median": "5.324 €/m²", "nb_pct": "131%", "published": "17/07/2026", "days_on_market": "4 dias", "vve": null, "ownership_disp": null, "funda_avg": null, "funda_pct": null, "woz": "303.000 €", "woz_year": 2025, "pct_woz": "99%", "score": "28", "sc_woz": 53, "sc_ppm2": 0, "sc_reno": 55, "sc_days": 2, "penalties": 0, "reno_effort": "medio", "reno_summary": "Alguns pontos a modernizar.", "notes": ["Preço 1% abaixo do WOZ"], "photo": "https://cloud.funda.nl/tiara-media/2a729483-30c3-43b0-8235-7173b16850da/4f48eaee-d18f-43a4-b789-27de897ab55f?options=width=800"}];
 
   function cell(k, v){ return v==null||v===''||v==='-' ? '' :
     '<div class="cell"><span class="k">'+k+'</span><span class="v">'+v+'</span></div>'; }
@@ -550,7 +572,9 @@
   function openModal(idx){
     var d = details[idx]; if(!d) return;
     var h = '<h2>'+d.address+'</h2>'
-      + '<div class="msub">'+(d.city||'')+(d.postal_code?' · '+d.postal_code:'')+' · fonte: '+d.source+'</div>';
+      + '<div class="msub">'+(d.city||'')+(d.postal_code?' · '+d.postal_code:'')
+      + (d.status ? ' · <span style="color:#d6a23f">'+d.status+'</span>' : '')
+      + ' · fonte: '+d.source+'</div>';
     if(d.photo) h += '<img class="mphoto" src="'+d.photo+'" alt="" onerror="this.remove()">';
     h += '<div class="mgrid">'
       + cell('Preço', d.price)
@@ -560,6 +584,8 @@
       + cell('€/m² vs bairro', d.nb_pct)
       + cell('Média bairro (Funda)', d.funda_avg)
       + cell('€/m² vs Funda', d.funda_pct)
+      + cell(d.woz_year ? 'WOZ ('+d.woz_year+')' : 'WOZ (oficial)', d.woz)
+      + cell('Preço vs WOZ', d.pct_woz)
       + cell('Quartos', d.rooms)
       + cell('Dormitórios', d.bedrooms)
       + cell('Ano de construção', d.year_built)
@@ -571,8 +597,10 @@
       + cell('Reforma', d.reno_effort)
       + '</div>';
     h += '<h4 style="color:var(--accent);margin:18px 0 6px;font-size:13px">Composição do score — '+d.score+'</h4>';
-    h += bar('€/m² vs bairro', d.sc_ppm2) + bar('Tempo no mercado', d.sc_days)
-       + bar('Label energético', d.sc_energy);
+    h += bar('€/m² vs bairro', d.sc_ppm2) + bar('Preço vs WOZ', d.sc_woz)
+       + bar('Potencial de reforma', d.sc_reno) + bar('Tempo no mercado', d.sc_days);
+    if (d.penalties && d.penalties > 0)
+      h += '<div class="bar-row"><span class="bl">Descontos (risco)</span><span style="color:#f07171">−'+d.penalties+'</span></div>';
     if(d.reno_summary) h += '<p style="color:var(--muted);font-size:13px;margin-top:12px">'+d.reno_summary+'</p>';
     if(d.notes && d.notes.length) h += '<div style="margin-top:8px">'
        + d.notes.map(function(n){return '<span class="badge">'+n+'</span>';}).join(' ') + '</div>';
@@ -584,11 +612,11 @@
   document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeModal(); });
 
   // Gráfico: preço/m² (x) vs score (y), tamanho = área. Redesenha conforme o filtro.
-  var chartData = {"ppm2": [4500.0, 5434.78, 5166.67, 5123.46, 4906.54, 5303.03, 5227.27, 5350.0, 5659.72, 6500.0, 6379.31, 5841.12, 5984.85, 5803.57, 5975.61, 6165.05, 6012.93, 6000.0, 5923.08, 6112.5, 6179.78, 6384.62, 6701.03, 6083.33, 6818.18, 8273.38, 7475.0, 8823.53, 8088.24, 10208.33], "score": [74.6, 66.4, 65.0, 64.9, 63.2, 61.1, 59.9, 57.6, 53.5, 50.4, 49.3, 48.1, 44.4, 43.9, 43.6, 41.6, 41.6, 40.4, 39.5, 37.9, 36.2, 35.0, 32.9, 28.2, 26.7, 20.0, 17.3, 10.0, 10.0, 10.0], "area": [80, 69, 150, 81, 107, 132, 110, 100, 144, 150, 203, 107, 66, 56, 123, 103, 232, 80, 65, 80, 89, 65, 97, 60, 55, 139, 40, 85, 170, 240], "labels": ["Mr. F.A. van Hallweg 112", "Lindenlaan 523", "Gunterstein 1", "Populierenlaan 415", "Meander 159", "De Parel 13", "Meander 863", "Galerij 92", "Max Havelaarlaan 109", "Rambaldolaan 5", "Soerlaan 4", "Maarten Lutherweg 284", "Van Heuven Goedhartlaan 494", "Vesuvius 26", "Taag 13", "De Zon 18", "Noorddammerlaan 83", "Mr. F.A. van Hallweg 58", "Mr. G. Groen van Prinstererlaan 137", "Mr. F.A. van Hallweg 114", "Meander 997", "Groenhof 72", "Legmeerdijk 26", "Goereesepad 115", "Bos en Vaartlaan 45", "Lindepark 75", "Populierenlaan 93", "Burgemeester Rijnderslaan 222", "Klaasje Zevensterstraat 569", "Eikenrodelaan 1"], "city": ["amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen"], "price": [360000, 375000, 775000, 415000, 525000, 700000, 575000, 535000, 815000, 975000, 1295000, 625000, 395000, 325000, 735000, 635000, 1395000, 480000, 385000, 489000, 550000, 415000, 650000, 365000, 375000, 1150000, 299000, 750000, 1375000, 2450000]};
+  var chartData = {"ppm2": [4753.97, 4800.0, 6015.62, 4500.0, 5154.64, 5059.52, 5154.64, 5319.15, 4681.82, 5723.68, 5405.41, 5154.64, 5951.61, 5506.33, 5487.5, 5519.48, 5437.5, 6168.83, 5350.0, 5927.84, 5458.72, 7142.86, 6117.02, 6909.09, 5324.07, 6428.57, 6626.51, 6034.48, 6950.0, 6953.49], "score": [64.8, 59.8, 58.6, 58.0, 57.7, 55.7, 51.8, 49.9, 49.7, 48.8, 48.2, 47.1, 42.8, 42.7, 40.5, 40.5, 39.5, 37.8, 37.2, 37.1, 36.8, 35.8, 35.3, 34.4, 34.3, 33.9, 32.3, 30.1, 29.1, 27.6], "area": [126, 125, 64, 80, 97, 84, 97, 94, 110, 76, 111, 97, 62, 79, 80, 77, 80, 77, 100, 97, 109, 77, 94, 55, 108, 70, 83, 87, 50, 43], "labels": ["Meander 297", "Fideliolaan 27", "Mr. G. Groen van Prinstererlaan 341", "Mr. F.A. van Hallweg 112", "Meander 295", "Franciscus van Assisi\u00eblaan 39", "Vesuvius 19", "Haya van Somerenlaan 102", "Meander 37", "Meander 81", "De Parel 26", "Groenhof 1", "Kringloop 275", "Tiengemeten 61", "Amberlaan 68", "Kostverlorenhof 113", "Populierenlaan 385", "Zonnesteinhof 10", "Galerij 92", "Meander 995", "Westelijk Halfrond 145", "Bosboom Toussaintlaan 43", "Haya van Somerenlaan 62", "Bos en Vaartlaan 51", "Groenhof 320", "Lindenlaan 499", "Mr. Troelstralaan 30", "Populierenlaan 537", "Tholenseweg 22", "Newa 27"], "city": ["amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen"], "price": [599000, 600000, 385000, 360000, 500000, 425000, 500000, 500000, 515000, 435000, 600000, 500000, 369000, 435000, 439000, 425000, 435000, 475000, 535000, 575000, 595000, 550000, 575000, 380000, 575000, 450000, 550000, 525000, 347500, 299000], "district": ["amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen", "amstelveen"]};
   function drawChart(mask){
     var x=[],y=[],t=[],a=[];
     for(var i=0;i<chartData.score.length;i++){
-      if(mask && !mask(chartData.city[i], chartData.price[i])) continue;
+      if(mask && !mask(chartData.city[i], chartData.price[i], chartData.district[i])) continue;
       x.push(chartData.ppm2[i]); y.push(chartData.score[i]);
       t.push(chartData.labels[i]); a.push(chartData.area[i]);
     }
@@ -607,27 +635,29 @@
 
   // Filtros de cidade e faixa de preço (client-side, sem recoletar)
   var fCity=document.getElementById('fCity'),
+      fDist=document.getElementById('fDist'),
       fMin=document.getElementById('fMin'),
       fMax=document.getElementById('fMax');
   function applyFilters(){
-    var city=fCity.value, mn=parseFloat(fMin.value), mx=parseFloat(fMax.value);
-    var mask=function(c,p){
+    var city=fCity.value, dist=fDist.value, mn=parseFloat(fMin.value), mx=parseFloat(fMax.value);
+    var mask=function(c,p,d){
       if(city && c!==city) return false;
+      if(dist && d!==dist) return false;
       if(!isNaN(mn) && p<mn) return false;
       if(!isNaN(mx) && p>mx) return false;
       return true;
     };
     var tb=document.querySelector('#tbl tbody'), shown=0;
     [].slice.call(tb.rows).forEach(function(r){
-      var ok=mask(r.dataset.city, +r.dataset.price);
+      var ok=mask(r.dataset.city, +r.dataset.price, r.dataset.district);
       r.style.display = ok?'':'none'; if(ok) shown++;
     });
     document.getElementById('vcount').innerText=shown;
     drawChart(mask);
   }
-  [fCity,fMin,fMax].forEach(function(el){ el.addEventListener('input', applyFilters); });
+  [fCity,fDist,fMin,fMax].forEach(function(el){ el.addEventListener('input', applyFilters); });
   document.getElementById('fReset').addEventListener('click', function(){
-    fCity.value=''; fMin.value=''; fMax.value=''; applyFilters();
+    fCity.value=''; fDist.value=''; fMin.value=''; fMax.value=''; applyFilters();
   });
 
   drawChart(null); // desenho inicial (sem filtro)
